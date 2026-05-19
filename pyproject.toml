@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "book-mash"
+version = "0.1.0"
+description = "MASH-style multi-judge measurement engine for book manuscripts"
+authors = ["Timur Isachenko"]
+readme = "README.md"
+packages = [{include = "book_mash"}]
+
+[tool.poetry.dependencies]
+python = "^3.13,<3.14"
+pydantic = "^2.9"
+pydantic-ai = "^0.0.40"
+anthropic = "^0.49"
+openai = "^1.50"
+voyageai = "^0.3"
+typer = "^0.15"
+rich = "^13.9"
+tomli = "^2.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+pytest-asyncio = "^0.24"
+pytest-mock = "^3.14"
+mypy = "^1.13"
+ruff = "^0.7"
+
+[tool.poetry.scripts]
+book-mash = "book_mash.cli:app"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = ["live: tests that hit real LLM APIs (opt-in, costs money)"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
