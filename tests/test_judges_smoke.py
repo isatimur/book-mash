@@ -39,3 +39,4 @@ async def test_humanness_passes_specific_prose():
     )
     score = await judge.judge(input)
     assert score.label in (JudgeLabel.MODERATE, JudgeLabel.STRONG)
+    assert score.evidence_refs  # worst_phrase is required even on a strong score

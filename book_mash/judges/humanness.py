@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
@@ -7,11 +8,12 @@ from pydantic_ai.models.anthropic import AnthropicModel
 from book_mash.judges.base import JudgeDim
 from book_mash.judges.models import JudgeInput, JudgeLabel, JudgeScore
 from book_mash.judges.registry import register_dim
+from book_mash.judges._pricing import estimate_cost
 
 
 class _HumannessOutput(BaseModel):
     score_0_100: float
-    label: str  # "strong" | "moderate" | "weak" | "fail"
+    label: Literal["strong", "moderate", "weak", "fail"]
     reasoning: str
     worst_phrase: str  # the worst phrase quoted from the paragraph
 
@@ -77,7 +79,7 @@ class HumannessJudge(JudgeDim):
             out: _HumannessOutput = result.data
             # pydantic-ai 0.0.40 Usage: request_tokens / response_tokens (not input_/output_tokens)
             usage = result.usage()
-            cost = _estimate_cost(usage.request_tokens or 0, usage.response_tokens or 0)
+            cost = estimate_cost(self.model_id, usage.request_tokens, usage.response_tokens)
             return JudgeScore(
                 dim_name=self.name,
                 unit_id=input.unit_id,
@@ -113,8 +115,3 @@ def _format_user_prompt(paragraph_text: str, surrounding: list[str]) -> str:
     parts.append("Paragraph to judge:")
     parts.append(paragraph_text)
     return "\n".join(parts)
-
-
-def _estimate_cost(request_tokens: int, response_tokens: int) -> float:
-    # claude-sonnet-4-6 approximate pricing per token (revise when prices change)
-    return (request_tokens * 3.0 + response_tokens * 15.0) / 1_000_000
