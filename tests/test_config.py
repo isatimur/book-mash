@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from book_mash.config import BookMashConfig, load_config
+from book_mash.config import load_config
 
 
 FIXTURE_CONFIG = Path(__file__).parent / "fixtures" / "mini_book" / "book-mash.toml"
