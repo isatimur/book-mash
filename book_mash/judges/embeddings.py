@@ -1,3 +1,4 @@
+import math
 import os
 from typing import Protocol, runtime_checkable
 
@@ -44,8 +45,6 @@ def pick_embedding_client() -> EmbeddingClient:
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
-    import math
-
     dot = sum(x * y for x, y in zip(a, b))
     na = math.sqrt(sum(x * x for x in a))
     nb = math.sqrt(sum(y * y for y in b))

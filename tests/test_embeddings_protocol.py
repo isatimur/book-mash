@@ -1,3 +1,5 @@
+import pytest
+
 from book_mash.judges.embeddings import EmbeddingClient, pick_embedding_client
 
 
@@ -18,6 +20,5 @@ def test_pick_falls_back_to_openai(monkeypatch):
 def test_pick_raises_without_either(monkeypatch):
     monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    import pytest as _pt
-    with _pt.raises(RuntimeError, match="No embedding API key"):
+    with pytest.raises(RuntimeError, match="No embedding API key"):
         pick_embedding_client()
