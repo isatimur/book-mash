@@ -34,7 +34,10 @@ def make_mock_score(dim: str, unit_id: str, score: float = 75.0) -> JudgeScore:
 
 @pytest.fixture
 def mock_all_judges():
+    call_counter = {"count": 0}
+
     async def fake_judge(self, input):
+        call_counter["count"] += 1
         return make_mock_score(self.name, input.unit_id)
 
     with patch("book_mash.judges.humanness.HumannessJudge.judge", new=fake_judge), \
@@ -43,7 +46,7 @@ def mock_all_judges():
          patch("book_mash.judges.evidence_density.EvidenceDensityJudge.judge", new=fake_judge), \
          patch("book_mash.judges.claim_defensibility.ClaimDefensibilityJudge.judge", new=fake_judge), \
          patch("book_mash.judges.redundancy.RedundancyJudge.judge", new=fake_judge):
-        yield
+        yield call_counter
 
 
 @pytest.fixture
@@ -65,13 +68,20 @@ async def test_measurement_runs_end_to_end(tmp_path, mock_all_judges, mock_embed
     chapter_ids = {s.unit_id for s in run.scores if s.unit_id.startswith("chapter:")}
     assert len(chapter_ids) == 2
     assert run.total_cost_usd > 0
+    assert "book" in run.rollups
+    assert any(s.derived for s in run.scores)
 
 
 async def test_measurement_idempotent_with_warm_cache(tmp_path, mock_all_judges, mock_embeddings):
     cfg = load_config(str(FIXTURE_CONFIG))
     cfg.runs_dir = str(tmp_path)
     run1 = await run_measurement(cfg)
+    calls_after_run1 = mock_all_judges["count"]
+    assert calls_after_run1 > 0  # first run actually called judges
     run2 = await run_measurement(cfg)
+    calls_after_run2 = mock_all_judges["count"]
+    # second run on unchanged corpus must be fully served from the warm cache
+    assert calls_after_run2 == calls_after_run1
     scores_1 = sorted([(s.unit_id, s.dim_name) for s in run1.scores])
     scores_2 = sorted([(s.unit_id, s.dim_name) for s in run2.scores])
     assert scores_1 == scores_2

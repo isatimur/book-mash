@@ -6,7 +6,7 @@ from book_mash.cache import JudgeScoreCache, content_hash
 from book_mash.config import BookMashConfig
 from book_mash.corpus.claims_index import load_claims_index
 from book_mash.corpus.loader import compute_snapshot_hash, load_chapters
-from book_mash.corpus.models import Chapter, Corpus
+from book_mash.corpus.models import Chapter
 from book_mash.judges.base import JudgeDim
 from book_mash.judges.claim_defensibility import ClaimDefensibilityJudge
 from book_mash.judges.embeddings import pick_embedding_client
@@ -35,12 +35,6 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
     claims_index = load_claims_index(cfg.claims_dir)
     voice_baseline_excerpts = _load_voice_baseline(chapters, cfg.voice_baseline_chapters)
     snapshot_hash = compute_snapshot_hash(chapters)
-    Corpus(
-        chapters=chapters,
-        claims_index=claims_index,
-        voice_baseline=voice_baseline_excerpts,
-        corpus_snapshot_hash=snapshot_hash,
-    )
 
     run_id = _make_run_id(snapshot_hash)
     run_dir = Path(cfg.runs_dir) / run_id
@@ -77,6 +71,7 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
 
     para_tasks: list = []
     for chapter in chapters:
+        relevant_ledger = [c for c in claims_index if c.id.startswith(f"claim:{chapter.id}")]
         for section in chapter.sections:
             for i, paragraph in enumerate(section.paragraphs):
                 surrounding = _surrounding(section.paragraphs, i)
@@ -88,7 +83,6 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
                     unit_id=paragraph.id, unit_type="paragraph", unit_text=paragraph.text,
                     dim_name="usefulness", context={"chapter_title": chapter.title},
                 )))
-                relevant_ledger = [c for c in claims_index if c.id.startswith(f"claim:{chapter.id}")]
                 para_tasks.append(run_judge(judges["claim_defensibility"], JudgeInput(
                     unit_id=paragraph.id, unit_type="paragraph", unit_text=paragraph.text,
                     dim_name="claim_defensibility", context={"relevant_ledger": relevant_ledger},
