@@ -231,7 +231,7 @@ def _load_voice_baseline(chapters: list[Chapter], baseline_files: list[str]) -> 
 
 
 def _make_run_id(snapshot_hash: str) -> str:
-    timestamp = datetime.now(UTC).strftime("%Y-%m-%d-%H%M")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d-%H%M%S")
     short = snapshot_hash.split(":")[1][:4]
     return f"{timestamp}-{short}"
 
