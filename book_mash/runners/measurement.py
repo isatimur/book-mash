@@ -74,7 +74,7 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
 
     para_tasks: list = []
     for chapter in chapters:
-        relevant_ledger = [c for c in claims_index if c.id.startswith(f"claim:{chapter.id}")]
+        relevant_ledger = [c for c in claims_index if chapter.number in c.candidate_chapters]
         for section in chapter.sections:
             for i, paragraph in enumerate(section.paragraphs):
                 surrounding = _surrounding(section.paragraphs, i)
