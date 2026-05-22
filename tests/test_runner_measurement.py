@@ -94,7 +94,7 @@ async def test_measurement_runs_without_embedding_key(tmp_path, mock_all_judges)
     cfg.runs_dir = str(tmp_path)
 
     def _raise_no_key():
-        raise RuntimeError("No embedding API key found (set VOYAGE_API_KEY or OPENAI_API_KEY)")
+        raise RuntimeError("No embedding API key found (set OPENAI_API_KEY)")
 
     with patch("book_mash.runners.measurement.pick_embedding_client", side_effect=_raise_no_key):
         run = await run_measurement(cfg)

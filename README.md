@@ -13,4 +13,4 @@ poetry install
 poetry run book-mash measure --config /path/to/book-mash.toml
 ```
 
-Requires `ANTHROPIC_API_KEY` in environment. Optional: `VOYAGE_API_KEY` (preferred for embeddings) or `OPENAI_API_KEY` (fallback).
+Requires `ANTHROPIC_API_KEY` in environment. Optional: `OPENAI_API_KEY` (enables embedding-based redundancy prefilter).
