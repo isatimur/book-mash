@@ -40,3 +40,9 @@ def test_chapters_sorted_by_filename():
     chapters = load_chapters(FIXTURE_GLOB)
     assert chapters[0].file_path.endswith("chapter-01.md")
     assert chapters[1].file_path.endswith("chapter-02.md")
+
+
+def test_chapter_has_number():
+    chapters = load_chapters(FIXTURE_GLOB)
+    assert chapters[0].number == 1
+    assert chapters[1].number == 2

@@ -20,6 +20,7 @@ class Section(BaseModel):
 
 class Chapter(BaseModel):
     id: str
+    number: int = 0
     title: str
     file_path: str
     sections: list[Section]

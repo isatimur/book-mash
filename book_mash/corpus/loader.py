@@ -11,6 +11,7 @@ _H2 = re.compile(r"^##\s+(.+)$")
 _H3 = re.compile(r"^###\s+(.+)$")
 _CODE_FENCE = re.compile(r"^```")
 _BLOCKQUOTE = re.compile(r"^>\s")
+_CHAPTER_NUM = re.compile(r"[Cc]hapter\s+(\d+)")
 
 
 def load_chapters(chapters_glob: str) -> list[Chapter]:
@@ -129,8 +130,12 @@ def _load_chapter(file_path: str) -> Chapter:
     flush_paragraph()
     flush_section()
 
+    num_match = _CHAPTER_NUM.search(title)
+    number = int(num_match.group(1)) if num_match else 0
+
     return Chapter(
         id=chapter_id,
+        number=number,
         title=title or chapter_id,
         file_path=file_path,
         sections=sections,
