@@ -44,7 +44,10 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
     started = datetime.now(UTC).isoformat()
     judges = _build_judges()
 
-    embedder = pick_embedding_client()
+    try:
+        embedder = pick_embedding_client()
+    except RuntimeError:
+        embedder = None
     chapter_summaries = [{"id": c.id, "summary": _summarize_chapter(c)} for c in chapters]
 
     all_scores: list[JudgeScore] = []
@@ -109,9 +112,12 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
             unit_id=f"chapter:{chapter.id}", unit_type="chapter", unit_text=chapter.full_text,
             dim_name="voice", context={"voice_baseline_excerpts": voice_baseline_excerpts},
         )))
-        candidate_ids = await prefilter_candidates(
-            embedder, chapter_summaries[i]["summary"], earlier_summaries
-        )
+        if embedder is not None:
+            candidate_ids = await prefilter_candidates(
+                embedder, chapter_summaries[i]["summary"], earlier_summaries
+            )
+        else:
+            candidate_ids = []
         chapter_tasks.append(run_judge(judges["redundancy"], JudgeInput(
             unit_id=f"chapter:{chapter.id}", unit_type="chapter", unit_text=chapter.full_text,
             dim_name="redundancy",

@@ -85,3 +85,24 @@ async def test_measurement_idempotent_with_warm_cache(tmp_path, mock_all_judges,
     scores_1 = sorted([(s.unit_id, s.dim_name) for s in run1.scores])
     scores_2 = sorted([(s.unit_id, s.dim_name) for s in run2.scores])
     assert scores_1 == scores_2
+
+
+async def test_measurement_runs_without_embedding_key(tmp_path, mock_all_judges):
+    # No mock_embeddings fixture — pick_embedding_client raises RuntimeError (no key).
+    # The runner must tolerate this: skip the redundancy prefilter, still complete.
+    cfg = load_config(str(FIXTURE_CONFIG))
+    cfg.runs_dir = str(tmp_path)
+
+    def _raise_no_key():
+        raise RuntimeError("No embedding API key found (set VOYAGE_API_KEY or OPENAI_API_KEY)")
+
+    with patch("book_mash.runners.measurement.pick_embedding_client", side_effect=_raise_no_key):
+        run = await run_measurement(cfg)
+
+    assert run.status.value == "completed"
+    # redundancy still produced chapter-level scores (it runs on Anthropic, no embeddings needed)
+    redundancy_chapter_scores = [
+        s for s in run.scores
+        if s.dim_name == "redundancy" and s.unit_id.startswith("chapter:") and not s.derived
+    ]
+    assert len(redundancy_chapter_scores) == 2
