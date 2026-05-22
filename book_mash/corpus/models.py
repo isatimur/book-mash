@@ -29,9 +29,10 @@ class Chapter(BaseModel):
 
 
 class ClaimEntry(BaseModel):
-    id: str  # e.g. "claim:ch1#authority-blur"
-    text: str
-    strength: str  # "strong" | "moderate" | "weak"
+    id: str  # "claims#<N>"
+    text: str  # the claim prose (the ## N) heading)
+    support_level: str  # "tentative" | "moderate" | "strong"
+    candidate_chapters: list[int] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
     file_path: str
 

@@ -68,7 +68,7 @@ class ClaimDefensibilityJudge(JudgeDim):
     async def judge(self, input: JudgeInput) -> JudgeScore:
         ledger: list[ClaimEntry] = input.context.get("relevant_ledger", [])
         ledger_block = "\n".join(
-            f"- {c.id} (strength: {c.strength}): {c.text}" for c in ledger
+            f"- {c.id} (support_level: {c.support_level}): {c.text}" for c in ledger
         )
         prompt = (
             f"Relevant ledger entries:\n{ledger_block or '(none)'}\n\n"

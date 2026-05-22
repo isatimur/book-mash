@@ -5,10 +5,10 @@ from pathlib import Path
 from book_mash.corpus.models import ClaimEntry
 
 
-_CLAIM_HEADER = re.compile(r"^##\s+(claim:[a-z0-9#\-]+)$", re.MULTILINE)
-_STRENGTH = re.compile(r"\*\*Strength:\*\*\s+(\w+)")
-_TEXT = re.compile(r"\*\*Text:\*\*\s+(.+)")
-_SOURCES = re.compile(r"\*\*Sources:\*\*\s+(.+)")
+_CLAIM_HEADER = re.compile(r"^##\s+(\d+)\)\s+(.+?)\s*$", re.MULTILINE)
+_SUPPORT = re.compile(r"\*\*Support level:\*\*\s*([A-Za-z]+)")
+_CANDIDATE = re.compile(r"\*\*Candidate chapters:\*\*\s*(.+)")
+_WIKILINK = re.compile(r"\[\[([^\]]+)\]\]")
 
 
 def load_claims_index(claims_dir: str) -> list[ClaimEntry]:
@@ -17,28 +17,31 @@ def load_claims_index(claims_dir: str) -> list[ClaimEntry]:
     entries: list[ClaimEntry] = []
     for path in sorted(glob.glob(f"{claims_dir}/*.md")):
         text = Path(path).read_text(encoding="utf-8")
-        blocks = _split_by_claim_header(text)
-        for claim_id, body in blocks:
-            strength = _STRENGTH.search(body)
-            text_match = _TEXT.search(body)
-            sources_match = _SOURCES.search(body)
-            sources = [s.strip() for s in sources_match.group(1).split(",")] if sources_match else []
+        for number, claim_text, body in _split_by_claim_header(text):
+            support = _SUPPORT.search(body)
+            candidate = _CANDIDATE.search(body)
             entries.append(ClaimEntry(
-                id=claim_id,
-                text=text_match.group(1).strip() if text_match else "",
-                strength=strength.group(1).strip() if strength else "moderate",
-                source_refs=sources,
+                id=f"claims#{number}",
+                text=claim_text.strip(),
+                support_level=support.group(1).strip().lower() if support else "moderate",
+                candidate_chapters=_parse_ints(candidate.group(1)) if candidate else [],
+                source_refs=_WIKILINK.findall(body),
                 file_path=path,
             ))
     return entries
 
 
-def _split_by_claim_header(text: str) -> list[tuple[str, str]]:
-    parts = []
+def _split_by_claim_header(text: str) -> list[tuple[str, str, str]]:
+    parts: list[tuple[str, str, str]] = []
     matches = list(_CLAIM_HEADER.finditer(text))
     for i, m in enumerate(matches):
-        claim_id = m.group(1)
+        number = m.group(1)
+        claim_text = m.group(2)
         body_start = m.end()
         body_end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        parts.append((claim_id, text[body_start:body_end]))
+        parts.append((number, claim_text, text[body_start:body_end]))
     return parts
+
+
+def _parse_ints(s: str) -> list[int]:
+    return [int(n) for n in re.findall(r"\d+", s)]
