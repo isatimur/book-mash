@@ -37,7 +37,7 @@ Be conservative. Better to miss a claim than to invent one.
 
 def _build_agent() -> Agent:
     return Agent(
-        model=AnthropicModel("claude-haiku-4-5", api_key=os.environ["ANTHROPIC_API_KEY"]),
+        model=AnthropicModel("claude-sonnet-4-6", api_key=os.environ["ANTHROPIC_API_KEY"]),
         system_prompt=_SYSTEM_PROMPT,
         result_type=_EvidenceDensityOutput,
         result_retries=2,
@@ -66,7 +66,7 @@ def _score_for_density(claims_count: int, word_count: int) -> float:
 class EvidenceDensityJudge(JudgeDim):
     name = "evidence_density"
     unit_type = "section"
-    model_id = "claude-haiku-4-5"
+    model_id = "claude-sonnet-4-6"
 
     def __init__(self):
         self._agent = _build_agent()

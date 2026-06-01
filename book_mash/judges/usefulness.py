@@ -46,7 +46,7 @@ If weak or fail, leave `actionable_takeaway` empty.
 
 def _build_agent() -> Agent:
     return Agent(
-        model=AnthropicModel("claude-haiku-4-5", api_key=os.environ["ANTHROPIC_API_KEY"]),
+        model=AnthropicModel("claude-sonnet-4-6", api_key=os.environ["ANTHROPIC_API_KEY"]),
         system_prompt=_SYSTEM_PROMPT,
         result_type=_UsefulnessOutput,
         result_retries=2,
@@ -57,7 +57,7 @@ def _build_agent() -> Agent:
 class UsefulnessJudge(JudgeDim):
     name = "usefulness"
     unit_type = "paragraph"
-    model_id = "claude-haiku-4-5"
+    model_id = "claude-sonnet-4-6"
 
     def __init__(self):
         self._agent = _build_agent()
