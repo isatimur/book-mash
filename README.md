@@ -77,11 +77,13 @@ Rubric bands across every dim: `strong` (80–100) · `moderate` (50–79) · `w
 ## CLI
 
 ```bash
-book-mash init [--directory .]                       # interactive wizard
-book-mash measure --config ./book-mash.toml          # the measurement pass
+book-mash init [--directory .]                                # interactive wizard
+book-mash measure --config ./book-mash.toml [--dry-run]       # the measurement pass
 ```
 
 `init` walks 5 prompts (chapters glob, claims dir, evidence dir, voice baseline, runs dir, budget) and writes `book-mash.toml` in the target directory. Defaults are real defaults — most book projects only need to confirm them.
+
+`measure --dry-run` counts units (chapters / sections / paragraphs), enumerates planned judge calls per dim, and prints an estimated cost — **no LLM calls are made**. Compares the estimate against the `max_cost_usd` budget so you can spot a blown budget before paying for it. Estimates assume a cold cache (warm-cache reruns typically reuse ~90% of calls).
 
 `gate` (v0.2, continuous re-score after each research_pass) and `autoresearch` (v0.3, Sonnet rewrites passage → judges score → accept-if-better) are roadmap items — not wired up to the CLI yet, to keep `book-mash --help` honest about what actually works.
 
@@ -163,6 +165,7 @@ book-mash/
     judges/                   # six judge implementations + base class + pricing
     runners/
       measurement.py          # the v0.1 pipeline (260 lines)
+      planner.py              # dry-run cost estimator (no LLM calls)
       models.py               # Run / RunStatus types
     output/                   # ledger, report, annotations renderers
   tests/                      # ~10 test files: config, models, judges, rollups, output
