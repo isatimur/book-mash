@@ -6,21 +6,18 @@ from book_mash.cli import app
 runner = CliRunner()
 
 
-def test_help():
+def test_help_renders():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "measure" in result.stdout
-    assert "gate" in result.stdout
-    assert "autoresearch" in result.stdout
+    assert "config" in result.stdout.lower()
 
 
-def test_gate_prints_stub():
-    result = runner.invoke(app, ["gate"])
+def test_help_mentions_measurement():
+    result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "not yet" in result.stdout
+    assert "measure" in result.stdout.lower()
 
 
-def test_autoresearch_prints_stub():
-    result = runner.invoke(app, ["autoresearch"])
-    assert result.exit_code == 0
-    assert "not yet" in result.stdout
+def test_missing_config_fails_cleanly():
+    result = runner.invoke(app, [])
+    assert result.exit_code != 0

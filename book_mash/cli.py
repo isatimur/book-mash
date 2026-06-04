@@ -10,8 +10,6 @@ from book_mash.corpus.loader import load_chapters
 from book_mash.output.annotations import write_annotations
 from book_mash.output.ledger import write_ledger
 from book_mash.output.report import render_report
-from book_mash.runners.autoresearch import run_autoresearch
-from book_mash.runners.gate import run_gate
 from book_mash.runners.measurement import run_measurement
 
 
@@ -36,18 +34,6 @@ def measure(config: str = typer.Option(..., "--config", help="Path to book-mash.
         run_id=run.id,
     )
     _print_summary(run, run_dir)
-
-
-@app.command()
-def gate():
-    """(v0.2) Re-score after a research_pass."""
-    run_gate()
-
-
-@app.command()
-def autoresearch():
-    """(v0.3) Mutator + accept-if-better revision loop."""
-    run_autoresearch()
 
 
 def _print_summary(run, run_dir: Path) -> None:

@@ -73,12 +73,10 @@ Rubric bands across every dim: `strong` (80–100) · `moderate` (50–79) · `w
 ## CLI
 
 ```bash
-book-mash measure --config ./book-mash.toml          # the v0.1 entrypoint
-book-mash gate                                       # v0.2 — stub
-book-mash autoresearch                               # v0.3 — stub
+book-mash measure --config ./book-mash.toml
 ```
 
-Only `measure` is implemented. `gate` and `autoresearch` are scaffolded with `@app.command()` decorators but print "not yet implemented" — they're road-mapped for v0.2 (continuous re-score after each research_pass) and v0.3 (Sonnet rewrites passage → judges score → accept-if-better).
+One command in v0.1. `gate` (v0.2, continuous re-score after each research_pass) and `autoresearch` (v0.3, Sonnet rewrites passage → judges score → accept-if-better) are roadmap items — not wired up to the CLI yet, to keep `book-mash --help` honest about what actually works.
 
 Future flags (post-v0.1): `--chapters 5,6,8` and `--dims humanness,voice` for narrowing during development.
 
@@ -157,8 +155,7 @@ book-mash/
     judges/                   # six judge implementations + base class + pricing
     runners/
       measurement.py          # the v0.1 pipeline (260 lines)
-      gate.py                 # v0.2 stub
-      autoresearch.py         # v0.3 stub
+      models.py               # Run / RunStatus types
     output/                   # ledger, report, annotations renderers
   tests/                      # ~10 test files: config, models, judges, rollups, output
   scripts/                    # repo-local utilities
