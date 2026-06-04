@@ -7,6 +7,7 @@ from rich.table import Table
 
 from book_mash.config import load_config
 from book_mash.corpus.loader import load_chapters
+from book_mash.init import run_init
 from book_mash.output.annotations import write_annotations
 from book_mash.output.ledger import write_ledger
 from book_mash.output.report import render_report
@@ -17,6 +18,19 @@ app = typer.Typer(help="MASH-style multi-judge measurement engine for book manus
 console = Console()
 
 _DIM_ORDER = ["humanness", "voice", "usefulness", "evidence_density", "claim_defensibility", "redundancy"]
+
+
+@app.command()
+def init(
+    directory: str = typer.Option(
+        ".",
+        "--directory",
+        "-d",
+        help="Target directory in which to write book-mash.toml.",
+    ),
+) -> None:
+    """Generate a book-mash.toml interactively."""
+    run_init(Path(directory).resolve())
 
 
 @app.command()

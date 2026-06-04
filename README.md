@@ -26,6 +26,10 @@ Python 3.13. Single dependency on Anthropic SDK + Pydantic + Typer + Rich. No ex
 From the consumer book repo:
 
 ```bash
+# 1. Generate a starter config interactively (answers 5 questions)
+poetry run --directory ~/Dev/LifeOS/book-mash book-mash init
+
+# 2. Run the measurement pass
 poetry run --directory ~/Dev/LifeOS/book-mash book-mash measure --config ./book-mash.toml
 ```
 
@@ -73,10 +77,13 @@ Rubric bands across every dim: `strong` (80–100) · `moderate` (50–79) · `w
 ## CLI
 
 ```bash
-book-mash measure --config ./book-mash.toml
+book-mash init [--directory .]                       # interactive wizard
+book-mash measure --config ./book-mash.toml          # the measurement pass
 ```
 
-One command in v0.1. `gate` (v0.2, continuous re-score after each research_pass) and `autoresearch` (v0.3, Sonnet rewrites passage → judges score → accept-if-better) are roadmap items — not wired up to the CLI yet, to keep `book-mash --help` honest about what actually works.
+`init` walks 5 prompts (chapters glob, claims dir, evidence dir, voice baseline, runs dir, budget) and writes `book-mash.toml` in the target directory. Defaults are real defaults — most book projects only need to confirm them.
+
+`gate` (v0.2, continuous re-score after each research_pass) and `autoresearch` (v0.3, Sonnet rewrites passage → judges score → accept-if-better) are roadmap items — not wired up to the CLI yet, to keep `book-mash --help` honest about what actually works.
 
 Future flags (post-v0.1): `--chapters 5,6,8` and `--dims humanness,voice` for narrowing during development.
 
@@ -149,8 +156,9 @@ book-mash/
   docs/
     design.md                 # canonical architecture spec (375 lines)
   book_mash/
-    cli.py                    # Typer entrypoint
+    cli.py                    # Typer entrypoint (init + measure)
     config.py                 # book-mash.toml loader
+    init.py                   # interactive wizard for book-mash.toml
     corpus/                   # Chapter→Section→Paragraph markdown parser
     judges/                   # six judge implementations + base class + pricing
     runners/
