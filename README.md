@@ -12,26 +12,47 @@ Generic engine: any book project that exposes a `book-mash.toml` can use it. The
 
 ## Install
 
+Two install paths — pick whichever fits your consumer project's tooling.
+
+**Via pip (recommended for consumers):**
 ```bash
-poetry install
+pip install git+https://github.com/<user>/book-mash.git@v0.1.0
+# or unpinned, tracking main:
+pip install git+https://github.com/<user>/book-mash.git@main
+```
+
+> The `<user>` placeholder will be replaced with the real GitHub path once the repo is published. Until then, install locally from a checkout: `pip install ~/Dev/LifeOS/book-mash` (or `-e` for editable).
+
+**Via Poetry (for contributors / local dev on book-mash itself):**
+```bash
+cd ~/Dev/LifeOS/book-mash
+poetry install              # installs the lockfile-pinned dev environment
+poetry install --no-root    # skip installing book-mash itself; just deps
 ```
 
 Required: `ANTHROPIC_API_KEY` in environment.
 Optional: `OPENAI_API_KEY` — enables embedding-based redundancy prefilter (otherwise redundancy falls back to direct Haiku comparisons, ~3× cost on long manuscripts).
 
-Python 3.13. Single dependency on Anthropic SDK + Pydantic + Typer + Rich. No external state — runs against a local `book-mash.toml` + the consumer repo's filesystem.
+Python 3.13. Runtime deps: Anthropic SDK + Pydantic + Pydantic-AI + Typer + Rich + Tomli + OpenAI SDK (only used for embeddings). No external state — runs against a local `book-mash.toml` + the consumer repo's filesystem.
+
+License: MIT (see `LICENSE`).
 
 ## Quickstart
 
-From the consumer book repo:
+From the consumer book repo, after `pip install`:
 
 ```bash
 # 1. Generate a starter config interactively (answers 5 questions)
-poetry run --directory ~/Dev/LifeOS/book-mash book-mash init
+book-mash init
 
-# 2. Run the measurement pass
-poetry run --directory ~/Dev/LifeOS/book-mash book-mash measure --config ./book-mash.toml
+# 2. Dry-run the measurement pass to preview cost
+book-mash measure --config ./book-mash.toml --dry-run
+
+# 3. Run for real
+book-mash measure --config ./book-mash.toml
 ```
+
+(If you installed via Poetry instead of pip, prefix each command with `poetry run --directory ~/Dev/LifeOS/book-mash`.)
 
 A full v0.1 run on a 10-chapter / 80k-word manuscript: **~$3–6** in Anthropic credits, **3–5 min** wall clock with default 8-way concurrency.
 
@@ -153,7 +174,8 @@ Philosophy: **partial runs are fine; silent lies are not.**
 
 ```
 book-mash/
-  pyproject.toml              # Poetry; Python 3.13
+  pyproject.toml              # PEP 621 + Poetry dual-compat; Python 3.13
+  LICENSE                     # MIT
   README.md                   # this file
   docs/
     design.md                 # canonical architecture spec (375 lines)

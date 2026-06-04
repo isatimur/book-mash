@@ -1,9 +1,59 @@
+## Dual-compat: PEP 621 `[project]` is read by pip and modern build tools.
+## Poetry 1.8.x reads `[tool.poetry]` — keep both in sync on version bumps.
+
+[project]
+name = "book-mash"
+version = "0.1.0"
+description = "MASH-style multi-judge measurement engine for book manuscripts"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Timur Isachenko"}]
+keywords = ["book", "manuscript", "evaluation", "judges", "anthropic", "mash"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Text Processing :: Markup",
+]
+dependencies = [
+    "pydantic>=2.9,<3.0",
+    "pydantic-ai>=0.0.40,<0.0.41",
+    "anthropic>=0.49,<0.50",
+    "openai>=1.50,<2.0",
+    "typer>=0.15,<0.16",
+    "rich>=13.9,<14.0",
+    "tomli>=2.0,<3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9.0",
+    "pytest-asyncio>=0.24,<0.25",
+    "pytest-mock>=3.14,<4.0",
+    "mypy>=1.13,<2.0",
+    "ruff>=0.7,<1.0",
+]
+
+[project.scripts]
+book-mash = "book_mash.cli:app"
+
+# [project.urls] will be filled in once the GitHub repo is created.
+# Example:
+#   Homepage = "https://github.com/<user>/book-mash"
+#   Source   = "https://github.com/<user>/book-mash"
+#   Issues   = "https://github.com/<user>/book-mash/issues"
+
+# Legacy Poetry 1.x metadata. Mirrors `[project]` above — keep them in sync.
 [tool.poetry]
 name = "book-mash"
 version = "0.1.0"
 description = "MASH-style multi-judge measurement engine for book manuscripts"
 authors = ["Timur Isachenko"]
 readme = "README.md"
+license = "MIT"
 packages = [{include = "book_mash"}]
 
 [tool.poetry.dependencies]
@@ -35,5 +85,5 @@ target-version = "py313"
 line-length = 100
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.8.0"]
 build-backend = "poetry.core.masonry.api"
