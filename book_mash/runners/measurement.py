@@ -27,7 +27,12 @@ from book_mash.runners.models import Run, RunStatus
 from book_mash.version import __version__
 
 
-_CONCURRENCY = 8
+# Lowered from 8 to reduce Anthropic rate-limit failures that left prior runs
+# partial (humanness + claim_defensibility under-covered). As of the retry layer
+# (judges/_retry.py), transient 429/529s are retried with backoff rather than
+# turned into permanent coverage gaps, so this is now a throughput knob, not a
+# coverage one — raise if your tier allows.
+_CONCURRENCY = 3
 
 
 async def run_measurement(cfg: BookMashConfig) -> Run:

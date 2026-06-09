@@ -9,6 +9,7 @@ from book_mash.judges.base import JudgeDim
 from book_mash.judges.models import JudgeInput, JudgeLabel, JudgeScore
 from book_mash.judges.registry import register_dim
 from book_mash.judges._pricing import estimate_cost
+from book_mash.judges._retry import run_with_backoff
 
 
 class _HumannessOutput(BaseModel):
@@ -75,7 +76,7 @@ class HumannessJudge(JudgeDim):
         surrounding = input.context.get("surrounding_paragraphs", [])
         user_prompt = _format_user_prompt(input.unit_text, surrounding)
         try:
-            result = await self._agent.run(user_prompt)
+            result = await run_with_backoff(lambda: self._agent.run(user_prompt))
             out: _HumannessOutput = result.data
             # pydantic-ai 0.0.40 Usage: request_tokens / response_tokens (not input_/output_tokens)
             usage = result.usage()

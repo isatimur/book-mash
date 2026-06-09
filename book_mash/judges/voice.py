@@ -9,6 +9,7 @@ from book_mash.judges._pricing import estimate_cost
 from book_mash.judges.base import JudgeDim
 from book_mash.judges.models import JudgeInput, JudgeLabel, JudgeScore
 from book_mash.judges.registry import register_dim
+from book_mash.judges._retry import run_with_backoff
 
 
 class _VoiceOutput(BaseModel):
@@ -64,7 +65,7 @@ class VoiceJudge(JudgeDim):
         baseline = input.context.get("voice_baseline_excerpts", [])
         prompt = _format_prompt(input.unit_text, baseline)
         try:
-            result = await self._agent.run(prompt)
+            result = await run_with_backoff(lambda: self._agent.run(prompt))
             out: _VoiceOutput = result.data
             usage = result.usage()
             cost = estimate_cost(self.model_id, usage.request_tokens, usage.response_tokens)

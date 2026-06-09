@@ -9,6 +9,7 @@ from book_mash.judges._pricing import estimate_cost
 from book_mash.judges.base import JudgeDim
 from book_mash.judges.models import JudgeInput, JudgeLabel, JudgeScore
 from book_mash.judges.registry import register_dim
+from book_mash.judges._retry import run_with_backoff
 
 
 class _CandidateClaim(BaseModel):
@@ -79,7 +80,7 @@ class EvidenceDensityJudge(JudgeDim):
             f"Section prose:\n{input.unit_text}"
         )
         try:
-            result = await self._agent.run(prompt)
+            result = await run_with_backoff(lambda: self._agent.run(prompt))
             out: _EvidenceDensityOutput = result.data
             grounded = [c for c in out.candidate_claims if c.closest_ledger_id]
             ungrounded = [c for c in out.candidate_claims if not c.closest_ledger_id]
