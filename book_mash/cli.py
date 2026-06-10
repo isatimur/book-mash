@@ -54,7 +54,7 @@ def measure(
     write_ledger(run, run_dir)
     render_report(run, run_dir)
     write_annotations(
-        load_chapters(cfg.chapters_glob),
+        load_chapters(cfg.chapters_glob, cfg.skip_sections),
         run.scores,
         run_dir / "annotations",
         run_id=run.id,

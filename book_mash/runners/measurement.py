@@ -36,7 +36,7 @@ _CONCURRENCY = 3
 
 
 async def run_measurement(cfg: BookMashConfig) -> Run:
-    chapters = load_chapters(cfg.chapters_glob)
+    chapters = load_chapters(cfg.chapters_glob, cfg.skip_sections)
     claims_index = load_claims_index(cfg.claims_dir)
     voice_baseline_excerpts = _load_voice_baseline(chapters, cfg.voice_baseline_chapters)
     snapshot_hash = compute_snapshot_hash(chapters)

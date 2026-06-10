@@ -9,6 +9,7 @@ class BookMashConfig(BaseModel):
     claims_dir: str
     evidence_dir: str
     voice_baseline_chapters: list[str]
+    skip_sections: list[str]
     runs_dir: str
     max_cost_usd: float
 
@@ -26,6 +27,7 @@ def load_config(path: str) -> BookMashConfig:
         claims_dir=str(base / corpus["claims_dir"]),
         evidence_dir=str(base / corpus["evidence_dir"]),
         voice_baseline_chapters=corpus.get("voice_baseline_chapters", []),
+        skip_sections=corpus.get("skip_sections", []),
         runs_dir=str(base / output["runs_dir"]),
         max_cost_usd=float(budget.get("max_cost_usd", 10.0)),
     )

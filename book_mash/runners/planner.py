@@ -83,7 +83,7 @@ def _embedder_available() -> bool:
 
 def plan_measurement(cfg: BookMashConfig) -> MeasurementPlan:
     """Count units and estimate cost. No LLM or embedding calls."""
-    chapters = load_chapters(cfg.chapters_glob)
+    chapters = load_chapters(cfg.chapters_glob, cfg.skip_sections)
     n_chapters = len(chapters)
     n_sections = sum(len(c.sections) for c in chapters)
     n_paragraphs = sum(len(s.paragraphs) for c in chapters for s in c.sections)

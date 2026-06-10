@@ -14,16 +14,17 @@ _BLOCKQUOTE = re.compile(r"^>\s")
 _CHAPTER_NUM = re.compile(r"[Cc]hapter\s+(\d+)")
 
 
-def load_chapters(chapters_glob: str) -> list[Chapter]:
+def load_chapters(chapters_glob: str, skip_sections: list[str] | None = None) -> list[Chapter]:
     paths = sorted(glob.glob(chapters_glob))
-    return [_load_chapter(p) for p in paths]
+    skip = set(skip_sections or [])
+    return [_load_chapter(p, skip) for p in paths]
 
 
 def _slug(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
 
 
-def _load_chapter(file_path: str) -> Chapter:
+def _load_chapter(file_path: str, skip_sections: set[str] | None = None) -> Chapter:
     text = Path(file_path).read_text(encoding="utf-8")
     lines = text.splitlines()
 
@@ -33,7 +34,9 @@ def _load_chapter(file_path: str) -> Chapter:
     current_para_lines: list[str] = []
     current_para_start: int | None = None
     in_code = False
+    in_skipped_section = False
     chapter_id = _slug(Path(file_path).stem)
+    _skip = skip_sections or set()
 
     def flush_paragraph():
         nonlocal current_para_lines, current_para_start
@@ -99,6 +102,11 @@ def _load_chapter(file_path: str) -> Chapter:
             flush_paragraph()
             flush_section()
             heading = m2.group(1).strip()
+            if heading in _skip:
+                in_skipped_section = True
+                current_section = None
+                continue
+            in_skipped_section = False
             depth = 2 if _H2.match(line) else 3
             sec_id = f"section:{chapter_id}#{_slug(heading)}"
             current_section = {
@@ -108,6 +116,9 @@ def _load_chapter(file_path: str) -> Chapter:
                 "paragraphs": [],
                 "start": i,
             }
+            continue
+
+        if in_skipped_section:
             continue
 
         if line.strip() == "":
