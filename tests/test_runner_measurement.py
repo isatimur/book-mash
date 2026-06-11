@@ -106,3 +106,39 @@ async def test_measurement_runs_without_embedding_key(tmp_path, mock_all_judges)
         if s.dim_name == "redundancy" and s.unit_id.startswith("chapter:") and not s.derived
     ]
     assert len(redundancy_chapter_scores) == 2
+
+
+async def test_heavy_judges_serialize_under_their_own_semaphore(tmp_path, mock_embeddings):
+    # Regression for the run-4 coverage gap: humanness + claim_defensibility must
+    # never run more than _HEAVY_CONCURRENCY at a time (so their large prompts stay
+    # under the per-key TPM ceiling), while the small-prompt judges are unaffected.
+    import asyncio
+
+    from book_mash.runners.measurement import _HEAVY_CONCURRENCY, _HEAVY_JUDGES
+
+    state = {"heavy_inflight": 0, "heavy_peak": 0, "heavy_total": 0}
+
+    async def fake_judge(self, input):
+        if self.name in _HEAVY_JUDGES:
+            state["heavy_inflight"] += 1
+            state["heavy_total"] += 1
+            state["heavy_peak"] = max(state["heavy_peak"], state["heavy_inflight"])
+            await asyncio.sleep(0.01)  # hold the slot so any overlap would surface
+            state["heavy_inflight"] -= 1
+        return make_mock_score(self.name, input.unit_id)
+
+    with patch("book_mash.judges.humanness.HumannessJudge.judge", new=fake_judge), \
+         patch("book_mash.judges.voice.VoiceJudge.judge", new=fake_judge), \
+         patch("book_mash.judges.usefulness.UsefulnessJudge.judge", new=fake_judge), \
+         patch("book_mash.judges.evidence_density.EvidenceDensityJudge.judge", new=fake_judge), \
+         patch("book_mash.judges.claim_defensibility.ClaimDefensibilityJudge.judge", new=fake_judge), \
+         patch("book_mash.judges.redundancy.RedundancyJudge.judge", new=fake_judge):
+        cfg = load_config(str(FIXTURE_CONFIG))
+        cfg.runs_dir = str(tmp_path)
+        run = await run_measurement(cfg)
+
+    assert run.status.value == "completed"
+    # The fixture exercises enough heavy paragraphs that, without the cap, they would
+    # overlap — so the peak being within the cap is a real constraint, not a vacuous one.
+    assert state["heavy_total"] > _HEAVY_CONCURRENCY
+    assert state["heavy_peak"] <= _HEAVY_CONCURRENCY

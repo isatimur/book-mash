@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -34,6 +35,18 @@ from book_mash.version import __version__
 # coverage one — raise if your tier allows.
 _CONCURRENCY = 3
 
+# The retry layer recovers *transient* throttles, but run 4 (0cb7) still left
+# humanness at 70% and claim_defensibility at 71% while the small-prompt judges
+# hit 100%. The cause is sustained, not transient: those two judges carry by far
+# the largest prompts (humanness bundles the surrounding paragraphs; claim_
+# defensibility bundles the relevant ledger), so running several at once pushes
+# the per-key tokens-per-minute rate past the ceiling faster than backoff can
+# recover. Serialize just those two through a separate, tighter semaphore so the
+# heavy calls drip under the TPM ceiling while usefulness/voice/evidence/
+# redundancy keep the full _CONCURRENCY throughput.
+_HEAVY_JUDGES = frozenset({"humanness", "claim_defensibility"})
+_HEAVY_CONCURRENCY = 1
+
 
 async def run_measurement(cfg: BookMashConfig) -> Run:
     chapters = load_chapters(cfg.chapters_glob, cfg.skip_sections)
@@ -58,14 +71,28 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
     all_scores: list[JudgeScore] = []
     cost = 0.0
     sem = asyncio.Semaphore(_CONCURRENCY)
+    heavy_sem = asyncio.Semaphore(_HEAVY_CONCURRENCY)
+
+    @asynccontextmanager
+    async def _slots(judge_name: str):
+        # Heavy judges hold their own slot first, then a global slot. Light judges
+        # only ever take the global slot, so there is no circular wait (no deadlock)
+        # and at most _HEAVY_CONCURRENCY heavy calls are in flight at once.
+        if judge_name in _HEAVY_JUDGES:
+            async with heavy_sem, sem:
+                yield
+        else:
+            async with sem:
+                yield
 
     async def run_judge(judge: JudgeDim, input: JudgeInput) -> JudgeScore:
         nonlocal cost
-        unit_hash = content_hash(input.unit_text)
+        ctx_key = judge.context_cache_key(input)
+        unit_hash = content_hash(input.unit_text + "|ctx:" + ctx_key) if ctx_key else content_hash(input.unit_text)
         cached = cache.get(unit_hash, judge.name, DIM_REGISTRY_VERSION, judge.model_id)
         if cached is not None:
             return cached
-        async with sem:
+        async with _slots(judge.name):
             if cost >= cfg.max_cost_usd:
                 return JudgeScore(
                     dim_name=judge.name, unit_id=input.unit_id, score_0_100=None,
