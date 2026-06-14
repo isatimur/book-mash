@@ -1,3 +1,5 @@
+import hashlib
+import json
 import os
 from typing import Literal
 
@@ -65,6 +67,14 @@ class ClaimDefensibilityJudge(JudgeDim):
 
     def __init__(self):
         self._agent = _build_agent()
+
+    def context_cache_key(self, input: JudgeInput) -> str:
+        ledger: list[ClaimEntry] = input.context.get("relevant_ledger", [])
+        serialized = json.dumps(
+            [{"id": c.id, "text": c.text, "support_level": c.support_level} for c in ledger],
+            sort_keys=True,
+        )
+        return hashlib.sha256(serialized.encode()).hexdigest()
 
     async def judge(self, input: JudgeInput) -> JudgeScore:
         ledger: list[ClaimEntry] = input.context.get("relevant_ledger", [])

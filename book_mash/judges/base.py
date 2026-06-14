@@ -13,6 +13,10 @@ class JudgeDim(ABC):
     async def judge(self, input: JudgeInput) -> JudgeScore:
         ...
 
+    def context_cache_key(self, input: JudgeInput) -> str:
+        # Override to add mutable context (e.g. claims ledger) to the cache key.
+        return ""
+
     def label_for_score(self, score: float) -> str:
         if score >= 80:
             return "strong"
