@@ -49,7 +49,7 @@ Even a "strong" score must name the weakest moment.
 """
 
 
-def _build_agent() -> Agent:
+def _build_agent() -> Agent[None, _HumannessOutput]:
     # pydantic-ai 0.0.40: AnthropicModel takes api_key= directly (no AnthropicProvider);
     # system_prompt= (not instructions=); result_type= is correct; result_retries= (not output_retries=)
     return Agent(

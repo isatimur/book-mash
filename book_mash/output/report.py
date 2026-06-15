@@ -75,7 +75,7 @@ def _render_per_chapter(run: Run) -> str:
         parts.append(f"### {ch_id}")
         weakest = sorted(
             [s for s in run.scores if s.unit_id.startswith(f"paragraph:{ch_id}") and not s.derived and s.score_0_100 is not None],
-            key=lambda s: s.score_0_100,
+            key=lambda s: s.score_0_100 or 0.0,  # None already filtered above
         )[:3]
         if weakest:
             parts.append("**Weakest paragraphs:**")

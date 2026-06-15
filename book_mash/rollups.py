@@ -1,7 +1,9 @@
+from collections.abc import Sequence
+
 from book_mash.judges.models import JudgeLabel, JudgeScore
 
 
-def weighted_mean(values: list[float | None], weights: list[int]) -> float | None:
+def weighted_mean(values: Sequence[float | None], weights: Sequence[int]) -> float | None:
     pairs = [(v, w) for v, w in zip(values, weights) if v is not None]
     if not pairs:
         return None

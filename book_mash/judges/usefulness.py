@@ -45,7 +45,7 @@ If weak or fail, leave `actionable_takeaway` empty.
 """
 
 
-def _build_agent() -> Agent:
+def _build_agent() -> Agent[None, _UsefulnessOutput]:
     return Agent(
         model=AnthropicModel("claude-sonnet-4-6", api_key=os.environ["ANTHROPIC_API_KEY"]),
         system_prompt=_SYSTEM_PROMPT,

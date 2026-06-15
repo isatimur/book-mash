@@ -36,7 +36,7 @@ Be conservative. Better to miss a claim than to invent one.
 """
 
 
-def _build_agent() -> Agent:
+def _build_agent() -> Agent[None, _EvidenceDensityOutput]:
     return Agent(
         model=AnthropicModel("claude-sonnet-4-6", api_key=os.environ["ANTHROPIC_API_KEY"]),
         system_prompt=_SYSTEM_PROMPT,

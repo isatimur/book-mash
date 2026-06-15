@@ -43,7 +43,7 @@ You must name the specific drift in `drift_summary`. Be concrete: not "different
 """
 
 
-def _build_agent() -> Agent:
+def _build_agent() -> Agent[None, _VoiceOutput]:
     return Agent(
         model=AnthropicModel("claude-sonnet-4-6", api_key=os.environ["ANTHROPIC_API_KEY"]),
         system_prompt=_SYSTEM_PROMPT,

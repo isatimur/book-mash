@@ -50,7 +50,7 @@ Report all overstated and unsupported claims explicitly.
 """
 
 
-def _build_agent() -> Agent:
+def _build_agent() -> Agent[None, _ClaimDefensibilityOutput]:
     return Agent(
         model=AnthropicModel("claude-sonnet-4-6", api_key=os.environ["ANTHROPIC_API_KEY"]),
         system_prompt=_SYSTEM_PROMPT,
