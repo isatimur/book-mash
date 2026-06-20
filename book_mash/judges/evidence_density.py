@@ -5,6 +5,7 @@ from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModel
 
 from book_mash.corpus.models import ClaimEntry
+from book_mash.judges._model_settings import JUDGE_MODEL_SETTINGS
 from book_mash.judges._pricing import estimate_cost
 from book_mash.judges.base import JudgeDim
 from book_mash.judges.models import JudgeInput, JudgeLabel, JudgeScore
@@ -42,6 +43,7 @@ def _build_agent() -> Agent[None, _EvidenceDensityOutput]:
         system_prompt=_SYSTEM_PROMPT,
         result_type=_EvidenceDensityOutput,
         result_retries=2,
+        model_settings=JUDGE_MODEL_SETTINGS,
     )
 
 

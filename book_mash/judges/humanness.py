@@ -9,6 +9,7 @@ from book_mash.judges.base import JudgeDim
 from book_mash.judges.models import JudgeInput, JudgeLabel, JudgeScore
 from book_mash.judges.registry import register_dim
 from book_mash.judges._pricing import estimate_cost
+from book_mash.judges._model_settings import JUDGE_MODEL_SETTINGS
 from book_mash.judges._retry import run_with_backoff
 
 
@@ -60,6 +61,7 @@ def _build_agent() -> Agent[None, _HumannessOutput]:
         system_prompt=_SYSTEM_PROMPT,
         result_type=_HumannessOutput,
         result_retries=2,
+        model_settings=JUDGE_MODEL_SETTINGS,
     )
 
 

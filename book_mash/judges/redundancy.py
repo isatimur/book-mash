@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModel
 
+from book_mash.judges._model_settings import JUDGE_MODEL_SETTINGS
 from book_mash.judges._pricing import estimate_cost
 from book_mash.judges.base import JudgeDim
 from book_mash.judges.embeddings import EmbeddingClient, cosine_similarity
@@ -48,6 +49,7 @@ def _build_agent() -> Agent[None, _RedundancyOutput]:
         system_prompt=_SYSTEM_PROMPT,
         result_type=_RedundancyOutput,
         result_retries=2,
+        model_settings=JUDGE_MODEL_SETTINGS,
     )
 
 
