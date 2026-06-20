@@ -9,6 +9,11 @@ _CLAIM_HEADER = re.compile(r"^##\s+(\d+)\)\s+(.+?)\s*$", re.MULTILINE)
 _SUPPORT = re.compile(r"\*\*Support level:\*\*\s*([A-Za-z]+)")
 _CANDIDATE = re.compile(r"\*\*Candidate chapters:\*\*\s*(.+)")
 _WIKILINK = re.compile(r"\[\[([^\]]+)\]\]")
+_PHRASING = re.compile(r"\*\*Reusable phrasing:\*\*\s*(.+)")
+_QUOTE = re.compile(r"\*\*Quote:\*\*\s*[\"“]?(.+?)[\"”]?\s*$", re.MULTILINE)
+# the speaker/org label sits inside the wikilink display text after the final "|", e.g.
+# [[624-...-anthropic|#624 — Karan Sampath, Anthropic]]
+_SOURCE_LABEL = re.compile(r"\[\[[^\]|]*\|([^\]]+)\]\]")
 
 
 def load_claims_index(claims_dir: str) -> list[ClaimEntry]:
@@ -20,12 +25,16 @@ def load_claims_index(claims_dir: str) -> list[ClaimEntry]:
         for number, claim_text, body in _split_by_claim_header(text):
             support = _SUPPORT.search(body)
             candidate = _CANDIDATE.search(body)
+            phrasing = _PHRASING.search(body)
             entries.append(ClaimEntry(
                 id=f"claims#{number}",
                 text=claim_text.strip(),
                 support_level=support.group(1).strip().lower() if support else "moderate",
                 candidate_chapters=_parse_ints(candidate.group(1)) if candidate else [],
                 source_refs=_WIKILINK.findall(body),
+                quotes=[q.strip() for q in _QUOTE.findall(body) if q.strip()],
+                source_descriptions=[s.strip() for s in _SOURCE_LABEL.findall(body) if s.strip()],
+                reusable_phrasing=phrasing.group(1).strip() if phrasing else "",
                 file_path=path,
             ))
     return entries

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from book_mash.cache import JudgeScoreCache, content_hash
 from book_mash.config import BookMashConfig
+from book_mash.corpus.claim_retrieval import retrieve_relevant_claims
 from book_mash.corpus.claims_index import load_claims_index
 from book_mash.corpus.loader import compute_snapshot_hash, load_chapters
 from book_mash.corpus.models import Chapter
@@ -106,7 +107,6 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
 
     para_tasks: list = []
     for chapter in chapters:
-        relevant_ledger = [c for c in claims_index if chapter.number in c.candidate_chapters]
         for section in chapter.sections:
             for i, paragraph in enumerate(section.paragraphs):
                 surrounding = _surrounding(section.paragraphs, i)
@@ -118,6 +118,12 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
                     unit_id=paragraph.id, unit_type="paragraph", unit_text=paragraph.text,
                     dim_name="usefulness", context={"chapter_title": chapter.title},
                 )))
+                # P0 grounding fix: retrieve relevant claims from the FULL ledger by
+                # lexical relevance (NOT the editorial candidate_chapters tag), so that
+                # well-supported cross-chapter content (e.g. ch-5 Sampath/Anthropic ->
+                # claims #32/#33) is no longer routed away from the judge. The judge
+                # also receives each claim's supporting quotes (see claim_defensibility).
+                relevant_ledger = retrieve_relevant_claims(paragraph.text, claims_index)
                 para_tasks.append(run_judge(judges["claim_defensibility"], JudgeInput(
                     unit_id=paragraph.id, unit_type="paragraph", unit_text=paragraph.text,
                     dim_name="claim_defensibility", context={"relevant_ledger": relevant_ledger},

@@ -34,7 +34,15 @@ class ClaimEntry(BaseModel):
     support_level: str  # "tentative" | "moderate" | "strong"
     candidate_chapters: list[int] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
+    quotes: list[str] = Field(default_factory=list)  # verbatim supporting quotes from sources
+    source_descriptions: list[str] = Field(default_factory=list)  # speaker/org labels for each source
+    reusable_phrasing: str = ""  # the claim's reusable phrasing line, if present
     file_path: str
+
+    def retrieval_text(self) -> str:
+        """Concatenated text used for lexical relevance retrieval against a paragraph."""
+        parts = [self.text, self.reusable_phrasing, *self.quotes, *self.source_descriptions]
+        return " ".join(p for p in parts if p)
 
 
 class Corpus(BaseModel):

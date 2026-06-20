@@ -22,6 +22,20 @@ def test_claim_fields():
     assert any("225" in s for s in c1.source_refs)
 
 
+def test_quotes_and_phrasing_captured():
+    claims = load_claims_index(CLAIMS_DIR)
+    by_id = {c.id: c for c in claims}
+    c1 = by_id["claims#1"]
+    assert "from helpfulness to productive" in c1.quotes
+    assert "delegates that act on your behalf" in c1.quotes
+    assert any("Joel Hron" in s for s in c1.source_descriptions)
+    assert c1.reusable_phrasing == "the shift is from suggestion to delegated execution."
+    # retrieval_text concatenates statement + phrasing + quotes + sources
+    rt = c1.retrieval_text()
+    assert "delegates that act on your behalf" in rt
+    assert "delegated execution" in rt
+
+
 def test_candidate_chapters_parsed_as_ints():
     claims = load_claims_index(CLAIMS_DIR)
     by_id = {c.id: c for c in claims}

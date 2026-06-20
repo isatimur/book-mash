@@ -24,19 +24,33 @@ class _ClaimDefensibilityOutput(BaseModel):
     unsupported_claims: list[str]  # claim phrases with no ledger backing at all
 
 
+# Bump this string whenever the prompt, the assembled ledger context, or the
+# retrieval feeding it changes, so cached claim_defensibility scores are
+# invalidated WITHOUT disturbing any other dimension's cache. It is folded into
+# this judge's context_cache_key (which is part of the per-unit cache hash), so
+# the bump is scoped to claim_defensibility only.
+CLAIM_DEFENSIBILITY_PROMPT_VERSION = "2"
+
+
 _SYSTEM_PROMPT = """\
 You evaluate whether the claims made in a paragraph of book prose are defensible
 against the claims ledger that the book maintains.
 
 You receive:
 - the paragraph
-- the relevant ledger entries (with their declared strength: strong / moderate / weak)
+- the relevant ledger entries. Each entry includes its declared support strength
+  (strong / moderate / weak), the claim statement, and its supporting quotes and
+  sources (verbatim quotes from named speakers/sources backing the claim).
 
 For each claim made in the prose:
-- compare its rhetorical strength to the ledger entry's strength
+- match it to a ledger entry using BOTH the claim statement AND its supporting
+  quotes/sources. Prose may echo a supporting quote (e.g. "bless one platform",
+  "root of trust") rather than the claim statement's wording — treat a match
+  against a supporting quote or source as valid ledger backing.
+- compare its rhetorical strength to the matched ledger entry's strength
 - prose at or below ledger strength = OK
 - prose above ledger strength = overstated
-- prose with no matching ledger entry = unsupported
+- prose with no matching ledger entry (statement or supporting quote) = unsupported
 
 Rubric:
 - strong (80-100): all claims at or below ledger strength
@@ -45,10 +59,35 @@ Rubric:
 - fail (0-19): the paragraph makes a claim with no ledger backing at all
 
 The `fail` label is a ship-blocker. Use it whenever there is a fabricated or unsupported claim
-of any kind. False positives here are tolerable; false negatives are not.
+of any kind. Before flagging a claim as unsupported, confirm it is backed by
+neither a claim statement nor any supporting quote in the provided ledger entries.
 
 Report all overstated and unsupported claims explicitly.
 """
+
+
+def _format_claim(c: ClaimEntry) -> str:
+    """Render one ledger entry for the judge prompt: statement, support level, and
+    its supporting quotes/sources so prose can be matched against evidence."""
+    lines = [f"- {c.id} (support_level: {c.support_level}): {c.text}"]
+    for src, quote in zip(c.source_descriptions, c.quotes):
+        lines.append(f"    - source {src}: \"{quote}\"")
+    # If the source/quote lists are uneven, surface any remaining bare quotes too.
+    for quote in c.quotes[len(c.source_descriptions):]:
+        lines.append(f"    - supporting quote: \"{quote}\"")
+    if c.reusable_phrasing:
+        lines.append(f"    - reusable phrasing: {c.reusable_phrasing}")
+    return "\n".join(lines)
+
+
+def build_prompt(unit_text: str, ledger: list[ClaimEntry]) -> str:
+    """Assemble the full claim_defensibility user prompt. Exposed for testing the
+    retrieval/prompt-assembly path without an LLM call."""
+    ledger_block = "\n".join(_format_claim(c) for c in ledger)
+    return (
+        f"Relevant ledger entries:\n{ledger_block or '(none)'}\n\n"
+        f"Paragraph to evaluate:\n{unit_text}"
+    )
 
 
 def _build_agent() -> Agent[None, _ClaimDefensibilityOutput]:
@@ -73,20 +112,26 @@ class ClaimDefensibilityJudge(JudgeDim):
     def context_cache_key(self, input: JudgeInput) -> str:
         ledger: list[ClaimEntry] = input.context.get("relevant_ledger", [])
         serialized = json.dumps(
-            [{"id": c.id, "text": c.text, "support_level": c.support_level} for c in ledger],
+            {
+                "v": CLAIM_DEFENSIBILITY_PROMPT_VERSION,
+                "claims": [
+                    {
+                        "id": c.id,
+                        "text": c.text,
+                        "support_level": c.support_level,
+                        "quotes": c.quotes,
+                        "source_descriptions": c.source_descriptions,
+                    }
+                    for c in ledger
+                ],
+            },
             sort_keys=True,
         )
         return hashlib.sha256(serialized.encode()).hexdigest()
 
     async def judge(self, input: JudgeInput) -> JudgeScore:
         ledger: list[ClaimEntry] = input.context.get("relevant_ledger", [])
-        ledger_block = "\n".join(
-            f"- {c.id} (support_level: {c.support_level}): {c.text}" for c in ledger
-        )
-        prompt = (
-            f"Relevant ledger entries:\n{ledger_block or '(none)'}\n\n"
-            f"Paragraph to evaluate:\n{input.unit_text}"
-        )
+        prompt = build_prompt(input.unit_text, ledger)
         try:
             result = await run_with_backoff(lambda: self._agent.run(prompt))
             out: _ClaimDefensibilityOutput = result.data

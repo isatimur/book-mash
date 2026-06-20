@@ -5,7 +5,10 @@
 - **Support level:** strong
 - **Supporting sources:**
   - [[206-joel-hron|#206 — Joel Hron]]
+    - **Anchor:** `kDEvo2__Ijg` 00:00:54.800 → 00:00:57.280 · confidence: high
+    - **Quote:** "from helpfulness to productive"
   - [[225-michael-grinich|#225 — Michael Grinich]]
+    - **Quote:** "delegates that act on your behalf"
 - **Candidate chapters:** 1
 - **Reusable phrasing:** the shift is from suggestion to delegated execution.
 
