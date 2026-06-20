@@ -48,6 +48,19 @@ _CONCURRENCY = 3
 _HEAVY_JUDGES = frozenset({"humanness", "claim_defensibility"})
 _HEAVY_CONCURRENCY = 1
 
+# Hard per-unit wall-clock cap. Belt-and-suspenders on top of the per-request
+# httpx timeout (judges/_model_settings.py, 120s) and run_with_backoff's bounded
+# retries. The per-request timeout only bounds a single in-flight HTTP request; it
+# cannot catch a unit that wedges with NOTHING in flight (a code-level asyncio
+# stall: 0 CPU, 0 network connections). That failure mode is dangerous here because
+# claim_defensibility/humanness run under _HEAVY_CONCURRENCY=1 — a single stuck unit
+# holds heavy_sem forever and every other heavy unit blocks behind it, hanging the
+# whole run. This cap guarantees each unit either finishes or is force-cancelled and
+# recorded as an ERROR score within HARD_CAP_SECONDS, and the semaphore it held is
+# always released (see run_judge's finally), so no single unit can wedge the batch
+# for any reason (deadlock, half-open socket, model stall).
+HARD_CAP_SECONDS = 180.0
+
 
 async def run_measurement(cfg: BookMashConfig) -> Run:
     chapters = load_chapters(cfg.chapters_glob, cfg.skip_sections)
@@ -79,12 +92,23 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
         # Heavy judges hold their own slot first, then a global slot. Light judges
         # only ever take the global slot, so there is no circular wait (no deadlock)
         # and at most _HEAVY_CONCURRENCY heavy calls are in flight at once.
-        if judge_name in _HEAVY_JUDGES:
-            async with heavy_sem, sem:
-                yield
-        else:
-            async with sem:
-                yield
+        #
+        # Acquire/release explicitly in finally (rather than `async with sem`) so that
+        # if the wrapped judge call is force-cancelled by the hard cap, the slot is
+        # still handed back. `async with` would also release on cancellation, but the
+        # explicit finally makes the guarantee unmissable and local to one place: a
+        # timed-out unit can NEVER leave heavy_sem/sem held and wedge the rest of the
+        # batch behind it.
+        heavy = judge_name in _HEAVY_JUDGES
+        if heavy:
+            await heavy_sem.acquire()
+        await sem.acquire()
+        try:
+            yield
+        finally:
+            sem.release()
+            if heavy:
+                heavy_sem.release()
 
     async def run_judge(judge: JudgeDim, input: JudgeInput) -> JudgeScore:
         nonlocal cost
@@ -100,7 +124,20 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
                     label=JudgeLabel.ERROR, reasoning="halted: budget", evidence_refs=[],
                     model=judge.model_id, cost_usd=0.0, derived=False,
                 )
-            score = await judge.judge(input)
+            try:
+                # Hard wall-clock cap per unit. If the judge coroutine stalls for any
+                # reason (deadlock, half-open socket the per-request timeout misses,
+                # model never responding), wait_for cancels it and we record an ERROR
+                # score instead of hanging the whole run. The _slots finally releases
+                # the semaphore on this cancellation path, so the next unit proceeds.
+                score = await asyncio.wait_for(judge.judge(input), timeout=HARD_CAP_SECONDS)
+            except (asyncio.TimeoutError, TimeoutError):
+                return JudgeScore(
+                    dim_name=judge.name, unit_id=input.unit_id, score_0_100=None,
+                    label=JudgeLabel.ERROR,
+                    reasoning=f"hard timeout after {HARD_CAP_SECONDS:.0f}s",
+                    evidence_refs=[], model=judge.model_id, cost_usd=0.0, derived=False,
+                )
             cost += score.cost_usd
             cache.put(unit_hash, judge.name, DIM_REGISTRY_VERSION, judge.model_id, score)
             return score
