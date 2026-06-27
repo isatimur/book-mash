@@ -1,14 +1,13 @@
-import os
 from typing import Literal
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from pydantic_ai.models.anthropic import AnthropicModel
 
 from book_mash.judges.base import JudgeDim
 from book_mash.judges.models import JudgeInput, JudgeLabel, JudgeScore
 from book_mash.judges.registry import register_dim
 from book_mash.judges._pricing import estimate_cost
+from book_mash.judges._model_factory import DEFAULT_JUDGE_MODEL_ID, build_judge_model
 from book_mash.judges._model_settings import JUDGE_MODEL_SETTINGS
 from book_mash.judges._retry import run_with_backoff
 
@@ -50,18 +49,22 @@ Even a "strong" score must name the weakest moment.
 """
 
 
-def _build_agent() -> Agent[None, _HumannessOutput]:
-    # pydantic-ai 0.0.40: AnthropicModel takes api_key= directly (no AnthropicProvider);
-    # system_prompt= (not instructions=); result_type= is correct; result_retries= (not output_retries=)
-    return Agent(
-        model=AnthropicModel(
-            "claude-sonnet-4-6",
-            api_key=os.environ["ANTHROPIC_API_KEY"],
+def _build_agent() -> tuple[Agent[None, _HumannessOutput], str]:
+    # Model is now provider-configurable via _model_factory (Anthropic default,
+    # OpenRouter/OpenAI-compatible opt-in). The factory returns the model object
+    # AND the stable model-id string that flows into the cache key + JudgeScore.model.
+    # pydantic-ai 0.0.40: system_prompt= (not instructions=); result_type= is correct;
+    # result_retries= (not output_retries=).
+    model, model_id = build_judge_model()
+    return (
+        Agent(
+            model=model,
+            system_prompt=_SYSTEM_PROMPT,
+            result_type=_HumannessOutput,
+            result_retries=2,
+            model_settings=JUDGE_MODEL_SETTINGS,
         ),
-        system_prompt=_SYSTEM_PROMPT,
-        result_type=_HumannessOutput,
-        result_retries=2,
-        model_settings=JUDGE_MODEL_SETTINGS,
+        model_id,
     )
 
 
@@ -69,10 +72,12 @@ def _build_agent() -> Agent[None, _HumannessOutput]:
 class HumannessJudge(JudgeDim):
     name = "humanness"
     unit_type = "paragraph"
-    model_id = "claude-sonnet-4-6"
+    # ClassVar default for back-compat (planner introspection, tests); the instance
+    # attribute set in __init__ is the live value the runner reads.
+    model_id = DEFAULT_JUDGE_MODEL_ID
 
     def __init__(self):
-        self._agent = _build_agent()
+        self._agent, self.model_id = _build_agent()
 
     async def judge(self, input: JudgeInput) -> JudgeScore:
         surrounding = input.context.get("surrounding_paragraphs", [])

@@ -1,10 +1,9 @@
-import os
 from typing import Literal
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from pydantic_ai.models.anthropic import AnthropicModel
 
+from book_mash.judges._model_factory import DEFAULT_JUDGE_MODEL_ID, build_judge_model
 from book_mash.judges._model_settings import JUDGE_MODEL_SETTINGS
 from book_mash.judges._pricing import estimate_cost
 from book_mash.judges.base import JudgeDim
@@ -43,13 +42,20 @@ List the specific overlapping arguments and which earlier chapters they overlap 
 """
 
 
-def _build_agent() -> Agent[None, _RedundancyOutput]:
-    return Agent(
-        model=AnthropicModel("claude-sonnet-4-6", api_key=os.environ["ANTHROPIC_API_KEY"]),
-        system_prompt=_SYSTEM_PROMPT,
-        result_type=_RedundancyOutput,
-        result_retries=2,
-        model_settings=JUDGE_MODEL_SETTINGS,
+def _build_agent() -> tuple[Agent[None, _RedundancyOutput], str]:
+    # Model is provider-configurable via _model_factory (Anthropic default,
+    # OpenRouter/OpenAI-compatible opt-in). Factory returns the model object AND
+    # the stable model-id string that flows into the cache key + JudgeScore.model.
+    model, model_id = build_judge_model()
+    return (
+        Agent(
+            model=model,
+            system_prompt=_SYSTEM_PROMPT,
+            result_type=_RedundancyOutput,
+            result_retries=2,
+            model_settings=JUDGE_MODEL_SETTINGS,
+        ),
+        model_id,
     )
 
 
@@ -57,10 +63,12 @@ def _build_agent() -> Agent[None, _RedundancyOutput]:
 class RedundancyJudge(JudgeDim):
     name = "redundancy"
     unit_type = "chapter"
-    model_id = "claude-sonnet-4-6"
+    # ClassVar default for back-compat (planner introspection, tests); the
+    # instance attribute set in __init__ is the live value the runner reads.
+    model_id = DEFAULT_JUDGE_MODEL_ID
 
     def __init__(self):
-        self._agent = _build_agent()
+        self._agent, self.model_id = _build_agent()
 
     async def judge(self, input: JudgeInput) -> JudgeScore:
         earlier_summaries: list[dict] = input.context.get("earlier_chapter_summaries", [])

@@ -1,13 +1,12 @@
 import hashlib
 import json
-import os
 from typing import Literal
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from pydantic_ai.models.anthropic import AnthropicModel
 
 from book_mash.corpus.models import ClaimEntry
+from book_mash.judges._model_factory import DEFAULT_JUDGE_MODEL_ID, build_judge_model
 from book_mash.judges._model_settings import JUDGE_MODEL_SETTINGS
 from book_mash.judges._pricing import estimate_cost
 from book_mash.judges.base import JudgeDim
@@ -90,13 +89,20 @@ def build_prompt(unit_text: str, ledger: list[ClaimEntry]) -> str:
     )
 
 
-def _build_agent() -> Agent[None, _ClaimDefensibilityOutput]:
-    return Agent(
-        model=AnthropicModel("claude-sonnet-4-6", api_key=os.environ["ANTHROPIC_API_KEY"]),
-        system_prompt=_SYSTEM_PROMPT,
-        result_type=_ClaimDefensibilityOutput,
-        result_retries=2,
-        model_settings=JUDGE_MODEL_SETTINGS,
+def _build_agent() -> tuple[Agent[None, _ClaimDefensibilityOutput], str]:
+    # Model is provider-configurable via _model_factory (Anthropic default,
+    # OpenRouter/OpenAI-compatible opt-in). Factory returns the model object AND
+    # the stable model-id string that flows into the cache key + JudgeScore.model.
+    model, model_id = build_judge_model()
+    return (
+        Agent(
+            model=model,
+            system_prompt=_SYSTEM_PROMPT,
+            result_type=_ClaimDefensibilityOutput,
+            result_retries=2,
+            model_settings=JUDGE_MODEL_SETTINGS,
+        ),
+        model_id,
     )
 
 
@@ -104,10 +110,12 @@ def _build_agent() -> Agent[None, _ClaimDefensibilityOutput]:
 class ClaimDefensibilityJudge(JudgeDim):
     name = "claim_defensibility"
     unit_type = "paragraph"
-    model_id = "claude-sonnet-4-6"
+    # ClassVar default for back-compat (planner introspection, tests); the
+    # instance attribute set in __init__ is the live value the runner reads.
+    model_id = DEFAULT_JUDGE_MODEL_ID
 
     def __init__(self):
-        self._agent = _build_agent()
+        self._agent, self.model_id = _build_agent()
 
     def context_cache_key(self, input: JudgeInput) -> str:
         ledger: list[ClaimEntry] = input.context.get("relevant_ledger", [])
