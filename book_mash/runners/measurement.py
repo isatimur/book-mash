@@ -1,4 +1,5 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -34,7 +35,10 @@ from book_mash.version import __version__
 # (judges/_retry.py), transient 429/529s are retried with backoff rather than
 # turned into permanent coverage gaps, so this is now a throughput knob, not a
 # coverage one — raise if your tier allows.
-_CONCURRENCY = 3
+# Throughput knob, not a coverage one (the retry layer recovers transient 429s).
+# Sized for Anthropic's tight TPM ceiling; override via env for providers with
+# generous limits (e.g. OpenRouter/DeepSeek): BOOK_MASH_CONCURRENCY=16.
+_CONCURRENCY = int(os.environ.get("BOOK_MASH_CONCURRENCY", "3"))
 
 # The retry layer recovers *transient* throttles, but run 4 (0cb7) still left
 # humanness at 70% and claim_defensibility at 71% while the small-prompt judges
@@ -46,7 +50,11 @@ _CONCURRENCY = 3
 # heavy calls drip under the TPM ceiling while usefulness/voice/evidence/
 # redundancy keep the full _CONCURRENCY throughput.
 _HEAVY_JUDGES = frozenset({"humanness", "claim_defensibility"})
-_HEAVY_CONCURRENCY = 1
+# Serializes the two large-prompt judges under Anthropic's TPM ceiling. The hard
+# per-unit cap below already prevents a stuck heavy unit from wedging the batch, so
+# this is purely a rate knob — raise it for generous providers:
+# BOOK_MASH_HEAVY_CONCURRENCY=12.
+_HEAVY_CONCURRENCY = int(os.environ.get("BOOK_MASH_HEAVY_CONCURRENCY", "1"))
 
 # Hard per-unit wall-clock cap. Belt-and-suspenders on top of the per-request
 # httpx timeout (judges/_model_settings.py, 120s) and run_with_backoff's bounded
