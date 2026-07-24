@@ -38,4 +38,9 @@ JUDGE_REQUEST_TIMEOUT_S = 120.0
 JUDGE_MODEL_SETTINGS = ModelSettings(
     temperature=0.0,
     timeout=JUDGE_REQUEST_TIMEOUT_S,
+    # Judges return a short structured verdict (~300 tokens). Without an explicit
+    # cap, OpenAI-compatible gateways (OpenRouter) pre-authorize the model's full
+    # output window (16k+) per request against remaining credits, which 402s
+    # whole runs at high concurrency long before any real spend.
+    max_tokens=2048,
 )

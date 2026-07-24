@@ -147,7 +147,10 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
                     evidence_refs=[], model=judge.model_id, cost_usd=0.0, derived=False,
                 )
             cost += score.cost_usd
-            cache.put(unit_hash, judge.name, DIM_REGISTRY_VERSION, judge.model_id, score)
+            # Never cache errors: a cached 402/timeout would replay forever and
+            # make heal-reruns no-ops. Errors should be retried on the next run.
+            if score.label != JudgeLabel.ERROR:
+                cache.put(unit_hash, judge.name, DIM_REGISTRY_VERSION, judge.model_id, score)
             return score
 
     para_tasks: list = []
