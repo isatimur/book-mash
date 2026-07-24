@@ -16,12 +16,12 @@ Two install paths — pick whichever fits your consumer project's tooling.
 
 **Via pip (recommended for consumers):**
 ```bash
-pip install git+https://github.com/<user>/book-mash.git@v0.1.0
+pip install git+https://github.com/isatimur/book-mash.git@v0.1.0
 # or unpinned, tracking main:
-pip install git+https://github.com/<user>/book-mash.git@main
+pip install git+https://github.com/isatimur/book-mash.git@main
 ```
 
-> The `<user>` placeholder will be replaced with the real GitHub path once the repo is published. Until then, install locally from a checkout: `pip install ~/Dev/LifeOS/book-mash` (or `-e` for editable).
+> No `v0.1.0` tag exists yet — until one is cut, install from a checkout: `pip install ~/Dev/LifeOS/book-mash` (or `-e` for editable), or use the `@main` form above.
 
 **Via Poetry (for contributors / local dev on book-mash itself):**
 ```bash
