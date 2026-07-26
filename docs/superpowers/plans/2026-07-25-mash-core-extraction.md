@@ -1732,7 +1732,7 @@ poetry run mypy book_mash
 poetry run ruff check book_mash tests
 ```
 
-Expected: all green — same pass count as before this plan started (minus the tests that moved to mash-core, which now run as part of mash-core's own suite instead).
+Expected: all green, 0 failures — 68 passed / 3 deselected. (84 from Task 5 minus the 16 tests in the two deleted test files, test_model_factory.py [6] and test_retry.py [10], which already moved to mash-core in Task 2 and now run as part of mash-core's own suite instead.)
 
 - [ ] **Step 4: Commit**
 
