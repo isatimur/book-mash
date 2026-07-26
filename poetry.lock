@@ -1130,7 +1130,7 @@ pydantic-ai = "^0.0.40"
 
 [package.source]
 type = "directory"
-url = "../../../mash-core"
+url = "../mash-core"
 
 [[package]]
 name = "mdurl"

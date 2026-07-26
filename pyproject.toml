@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Text Processing :: Markup",
 ]
 dependencies = [
-    "mash-core @ file:///Users/timur_isachenko/Dev/LifeOS/mash-core",
+    "mash-core",
     "pydantic>=2.9,<3.0",
     "pydantic-ai>=0.0.40,<0.0.41",
     "anthropic>=0.49,<0.50",
@@ -59,7 +59,7 @@ packages = [{include = "book_mash"}]
 
 [tool.poetry.dependencies]
 python = "^3.13,<3.14"
-mash-core = {path = "/Users/timur_isachenko/Dev/LifeOS/mash-core", develop = true}
+mash-core = {path = "../mash-core", develop = true}
 pydantic = "^2.9"
 pydantic-ai = "^0.0.40"
 anthropic = "^0.49"
