@@ -1196,10 +1196,20 @@ git commit -m "deps: add mash-core as a local path dependency"
 - Modify: `book_mash/runners/models.py`
 - Modify: `book_mash/runners/measurement.py`
 - Modify: `book_mash/runners/planner.py`
+- Modify: `tests/test_cache.py`
+- Modify: `tests/test_judges_smoke.py`
+- Modify: `tests/test_output_annotations.py`
+- Modify: `tests/test_output_report.py`
+- Modify: `tests/test_rollups.py`
+- Modify: `tests/test_runner_measurement.py`
+- Modify: `tests/test_models.py`
+- Modify: `tests/test_judge_base.py`
 
 **Interfaces:**
 - Consumes: `mash_core.{JudgeDim, JudgeInput, JudgeLabel, JudgeScore, JudgeResult, UnitType, build_judge_model, DEFAULT_JUDGE_MODEL_ID, JUDGE_MODEL_SETTINGS, estimate_cost, run_with_backoff}`.
-- Produces: no new symbols — this task only repoints imports. `book_mash.judges.{base,models,_model_factory,_model_settings,_pricing,_retry}` are NOT deleted yet (Task 6 does that) so the suite still passes mid-task if run.
+- Produces: no new symbols — this task only repoints imports. `book_mash.judges.{base,models,_model_factory,_model_settings,_pricing,_retry}` are NOT deleted yet (Task 6 does that).
+
+**Revision note (post-hoc, added after Task 5's first dispatch went BLOCKED):** the plan originally split source-import rewiring (this task) from test-file import rewiring (Task 6), on the assumption that leaving the old modules in place made both halves independently green. That assumption was wrong: `mash_core.JudgeScore` is a separate Pydantic class from `book_mash.judges.models.JudgeScore` (mash-core has its own copy, not a re-export), so once this task retypes `Run.scores: list[JudgeScore]` to the new class, any test still constructing `Run`/`JudgeScore` from the *old* module fails Pydantic's strict validation. Confirmed empirically (87 passed/3 deselected baseline → 80 passed/7 failed/3 deselected after only the 14 source-file edits, isolated to `test_output_report.py` and `test_runner_measurement.py`). Fix: the 8 test-file import-only edits (formerly Task 6 Steps 1-8, now this task's Steps 15-22 below) are pulled into this task, so the commit that retypes `Run.scores` also updates every test file that constructs against it — the plan's "suite must pass after every task" constraint holds again. Task 6 now only does deletions.
 
 - [ ] **Step 1: `book_mash/judges/humanness.py`** — replace these 7 lines:
 
@@ -1480,51 +1490,7 @@ and update the one call site (currently `return _pricing.estimate_cost(model_id,
 return estimate_cost(model_id, in_tokens, out_tokens)
 ```
 
-- [ ] **Step 15: Sanity-check nothing still points at the old private modules**
-
-```bash
-cd /Users/timur_isachenko/Dev/LifeOS/book-mash
-grep -rn "book_mash\.judges\.\(base\|models\|_model_factory\|_model_settings\|_pricing\|_retry\)" book_mash/
-```
-
-Expected: no output (empty). If anything remains, it's a file this task missed — fix it before continuing.
-
-- [ ] **Step 16: Commit**
-
-```bash
-git add book_mash/
-git commit -m "refactor: import judge-core types from mash_core instead of book_mash.judges"
-```
-
-Note: the suite is expected to still be fully green after this commit, since Task 6 hasn't deleted the old files yet — both the new `mash_core` imports and the (still-present but now-unused) old `book_mash/judges/{base,models,...}.py` files coexist. Confirm with:
-
-```bash
-poetry run pytest
-```
-
----
-
-### Task 6: Move/trim book-mash's tests, delete the extracted files
-
-**Files:**
-- Modify: `tests/test_cache.py`
-- Modify: `tests/test_judges_smoke.py`
-- Modify: `tests/test_output_annotations.py`
-- Modify: `tests/test_output_report.py`
-- Modify: `tests/test_rollups.py`
-- Modify: `tests/test_runner_measurement.py`
-- Modify: `tests/test_models.py`
-- Modify: `tests/test_judge_base.py`
-- Delete: `tests/test_model_factory.py` (moved to mash-core in Task 2)
-- Delete: `tests/test_retry.py` (moved to mash-core in Task 2)
-- Delete: `book_mash/judges/base.py`
-- Delete: `book_mash/judges/models.py`
-- Delete: `book_mash/judges/_model_factory.py`
-- Delete: `book_mash/judges/_model_settings.py`
-- Delete: `book_mash/judges/_pricing.py`
-- Delete: `book_mash/judges/_retry.py`
-
-- [ ] **Step 1: `tests/test_cache.py`** — replace:
+- [ ] **Step 15: `tests/test_cache.py`** — replace:
 
 ```python
 from book_mash.judges.models import JudgeLabel, JudgeScore
@@ -1536,7 +1502,7 @@ with:
 from mash_core import JudgeLabel, JudgeScore
 ```
 
-- [ ] **Step 2: `tests/test_judges_smoke.py`** — replace:
+- [ ] **Step 16: `tests/test_judges_smoke.py`** — replace:
 
 ```python
 from book_mash.judges.models import JudgeInput, JudgeLabel
@@ -1548,7 +1514,7 @@ with:
 from mash_core import JudgeInput, JudgeLabel
 ```
 
-- [ ] **Step 3: `tests/test_output_annotations.py`** — replace:
+- [ ] **Step 17: `tests/test_output_annotations.py`** — replace:
 
 ```python
 from book_mash.judges.models import JudgeLabel, JudgeScore
@@ -1560,7 +1526,7 @@ with:
 from mash_core import JudgeLabel, JudgeScore
 ```
 
-- [ ] **Step 4: `tests/test_output_report.py`** — replace:
+- [ ] **Step 18: `tests/test_output_report.py`** — replace:
 
 ```python
 from book_mash.judges.models import JudgeLabel, JudgeScore
@@ -1572,7 +1538,7 @@ with:
 from mash_core import JudgeLabel, JudgeScore
 ```
 
-- [ ] **Step 5: `tests/test_rollups.py`** — replace:
+- [ ] **Step 19: `tests/test_rollups.py`** — replace:
 
 ```python
 from book_mash.judges.models import JudgeLabel, JudgeScore
@@ -1584,7 +1550,7 @@ with:
 from mash_core import JudgeLabel, JudgeScore
 ```
 
-- [ ] **Step 6: `tests/test_runner_measurement.py`** — replace:
+- [ ] **Step 20: `tests/test_runner_measurement.py`** — replace:
 
 ```python
 from book_mash.judges.models import JudgeLabel, JudgeScore
@@ -1596,7 +1562,7 @@ with:
 from mash_core import JudgeLabel, JudgeScore
 ```
 
-- [ ] **Step 7: `tests/test_models.py`** — remove the now-unused import and the two tests that moved to mash-core in Task 1 Step 8. Before:
+- [ ] **Step 21: `tests/test_models.py`** — remove the now-unused import and the two tests that moved to mash-core in Task 1 Step 8. Before:
 
 ```python
 from book_mash.corpus.models import Paragraph, Section, Chapter, Corpus
@@ -1648,7 +1614,7 @@ def test_judge_score_error_allows_null_score():
 
 The file should retain `test_paragraph_construction`, `test_chapter_aggregates_text`, and `test_run_status_enum` unchanged.
 
-- [ ] **Step 8: `tests/test_judge_base.py`** — remove the now-unused imports and the `FakeJudge`/`test_judge_returns_score` pair that moved to mash-core in Task 1 Step 9. Before:
+- [ ] **Step 22: `tests/test_judge_base.py`** — remove the now-unused imports and the `FakeJudge`/`test_judge_returns_score` pair that moved to mash-core in Task 1 Step 9. Before:
 
 ```python
 import pytest
@@ -1705,14 +1671,52 @@ from mash_core import JudgeInput
 
 The rest of the file (`test_registry_version_is_string`, `test_registry_starts_empty`, the `claim_defensibility_judge` fixture, `_make_input`, `_claim`, and the four `test_context_cache_key_*` tests) is unchanged — `JudgeInput` is still used by `_make_input`.
 
-- [ ] **Step 9: Delete the moved test files**
+- [ ] **Step 23: Sanity-check nothing still points at the old private modules**
+
+```bash
+cd /Users/timur_isachenko/Dev/LifeOS/book-mash
+grep -rn "book_mash\.judges\.\(base\|models\|_model_factory\|_model_settings\|_pricing\|_retry\)" book_mash/
+```
+
+Expected: exactly one hit — `book_mash/judges/base.py` importing `book_mash/judges/models.py` (old-file-to-old-file internal wiring; both deleted wholesale in Task 6). No other file should reference the old modules. If any other file shows up, it's a miss — fix it before continuing.
+
+- [ ] **Step 24: Run the full suite and commit**
+
+```bash
+poetry run pytest
+```
+
+Expected: fully green — same pass count as baseline (87 passed / 3 deselected). This is the point of pulling the test-file edits into this task: the suite must not regress mid-task.
+
+```bash
+git add book_mash/ tests/
+git commit -m "refactor: import judge-core types from mash_core instead of book_mash.judges"
+```
+
+---
+
+### Task 6: Delete the extracted files
+
+**Revision note:** this task originally also moved/trimmed 8 test files' imports; those steps were pulled into Task 5 (see Task 5's revision note) to keep the suite green after every task. This task is now deletions only — the old modules and their now-superseded test files, everything already re-pointed by Task 5.
+
+**Files:**
+- Delete: `tests/test_model_factory.py` (moved to mash-core in Task 2)
+- Delete: `tests/test_retry.py` (moved to mash-core in Task 2)
+- Delete: `book_mash/judges/base.py`
+- Delete: `book_mash/judges/models.py`
+- Delete: `book_mash/judges/_model_factory.py`
+- Delete: `book_mash/judges/_model_settings.py`
+- Delete: `book_mash/judges/_pricing.py`
+- Delete: `book_mash/judges/_retry.py`
+
+- [ ] **Step 1: Delete the moved test files**
 
 ```bash
 cd /Users/timur_isachenko/Dev/LifeOS/book-mash
 git rm tests/test_model_factory.py tests/test_retry.py
 ```
 
-- [ ] **Step 10: Delete the extracted source files**
+- [ ] **Step 2: Delete the extracted source files**
 
 ```bash
 git rm book_mash/judges/base.py book_mash/judges/models.py \
@@ -1720,7 +1724,7 @@ git rm book_mash/judges/base.py book_mash/judges/models.py \
        book_mash/judges/_pricing.py book_mash/judges/_retry.py
 ```
 
-- [ ] **Step 11: Run the full verification suite**
+- [ ] **Step 3: Run the full verification suite**
 
 ```bash
 poetry run pytest
@@ -1730,11 +1734,11 @@ poetry run ruff check book_mash tests
 
 Expected: all green — same pass count as before this plan started (minus the tests that moved to mash-core, which now run as part of mash-core's own suite instead).
 
-- [ ] **Step 12: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add tests/
-git commit -m "test: repoint judge-core tests at mash_core, delete moved test files and source"
+git add tests/ book_mash/
+git commit -m "chore: delete judge-core files now that book_mash imports from mash_core"
 ```
 
 ---
