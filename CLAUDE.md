@@ -75,7 +75,7 @@ Key: `sha256(unit_text + optional_ctx_key) | dim_name | dim_version | model_id`.
 
 ### Key models
 
-- `JudgeScore` — the atomic unit of all output. A `mash_core` type, re-exported and used throughout book-mash. Fields: `dim_name`, `unit_id`, `score_0_100` (None on error), `label` (strong/moderate/weak/fail/error), `reasoning`, `evidence_refs`, `model`, `cost_usd`, `derived`.
+- `JudgeScore` — the atomic unit of all output. A `mash_core` type, imported directly and used throughout book-mash. Fields: `dim_name`, `unit_id`, `score_0_100` (None on error), `label` (strong/moderate/weak/fail/error), `reasoning`, `evidence_refs`, `model`, `cost_usd`, `derived`.
 - `JudgeInput` — what a judge receives, also a `mash_core` type: `unit_id`, `unit_type`, `unit_text`, `dim_name`, `context` dict.
 - `Run` — top-level result, defined in book-mash: version stamps, `total_cost_usd`, `status` (completed / halted_budget), `rollups` dict, and the full `scores` list.
 
