@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from book_mash.judges.models import JudgeLabel, JudgeScore
+from mash_core import JudgeLabel, JudgeScore
 from book_mash.runners.models import Run
 
 

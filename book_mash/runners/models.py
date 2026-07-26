@@ -2,7 +2,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from book_mash.judges.models import JudgeScore
+from mash_core import JudgeScore
 
 
 class RunStatus(str, Enum):

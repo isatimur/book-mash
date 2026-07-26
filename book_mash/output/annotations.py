@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from book_mash.corpus.models import Chapter
-from book_mash.judges.models import JudgeLabel, JudgeScore
+from mash_core import JudgeLabel, JudgeScore
 
 
 _FINDING_LABELS = {JudgeLabel.WEAK, JudgeLabel.FAIL}

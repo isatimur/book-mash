@@ -10,12 +10,10 @@ from book_mash.corpus.claim_retrieval import retrieve_relevant_claims
 from book_mash.corpus.claims_index import load_claims_index
 from book_mash.corpus.loader import compute_snapshot_hash, load_chapters
 from book_mash.corpus.models import Chapter
-from book_mash.judges.base import JudgeDim
 from book_mash.judges.claim_defensibility import ClaimDefensibilityJudge
 from book_mash.judges.embeddings import pick_embedding_client
 from book_mash.judges.evidence_density import EvidenceDensityJudge
 from book_mash.judges.humanness import HumannessJudge
-from book_mash.judges.models import JudgeInput, JudgeLabel, JudgeScore
 from book_mash.judges.redundancy import RedundancyJudge, prefilter_candidates
 from book_mash.judges.registry import DIM_REGISTRY_VERSION
 from book_mash.judges.usefulness import UsefulnessJudge
@@ -28,6 +26,7 @@ from book_mash.rollups import (
 )
 from book_mash.runners.models import Run, RunStatus
 from book_mash.version import __version__
+from mash_core import JudgeDim, JudgeInput, JudgeLabel, JudgeScore
 
 
 # Lowered from 8 to reduce Anthropic rate-limit failures that left prior runs

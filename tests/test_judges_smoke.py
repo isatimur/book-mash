@@ -1,7 +1,7 @@
 import pytest
 
 from book_mash.judges.humanness import HumannessJudge
-from book_mash.judges.models import JudgeInput, JudgeLabel
+from mash_core import JudgeInput, JudgeLabel
 
 
 @pytest.mark.live

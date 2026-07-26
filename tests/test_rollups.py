@@ -1,4 +1,4 @@
-from book_mash.judges.models import JudgeLabel, JudgeScore
+from mash_core import JudgeLabel, JudgeScore
 from book_mash.rollups import weighted_mean, rollup_paragraph_to_section, rollup_section_to_chapter
 
 

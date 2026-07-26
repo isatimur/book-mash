@@ -2,7 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from book_mash.judges.models import JudgeScore
+from mash_core import JudgeScore
 
 
 def content_hash(text: str) -> str:

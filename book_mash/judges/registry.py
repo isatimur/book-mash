@@ -1,4 +1,4 @@
-from book_mash.judges.base import JudgeDim
+from mash_core import JudgeDim
 
 DIM_REGISTRY_VERSION = "0.1.0"
 

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 from book_mash.config import BookMashConfig
 from book_mash.corpus.loader import load_chapters
-from book_mash.judges import _pricing
+from mash_core import estimate_cost
 
 
 # Rough token-per-call assumptions for each granularity level.
@@ -68,7 +68,7 @@ class MeasurementPlan:
 
 def _per_call_cost(granularity: str, model_id: str) -> float:
     in_tokens, out_tokens = _TOKENS_PER_CALL[granularity]
-    return _pricing.estimate_cost(model_id, in_tokens, out_tokens)
+    return estimate_cost(model_id, in_tokens, out_tokens)
 
 
 def _embedder_available() -> bool:

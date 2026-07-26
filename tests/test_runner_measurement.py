@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from book_mash.config import load_config
-from book_mash.judges.models import JudgeLabel, JudgeScore
+from mash_core import JudgeLabel, JudgeScore
 from book_mash.runners.measurement import run_measurement
 
 

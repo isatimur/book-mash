@@ -1,5 +1,5 @@
 from book_mash.cache import JudgeScoreCache, content_hash
-from book_mash.judges.models import JudgeLabel, JudgeScore
+from mash_core import JudgeLabel, JudgeScore
 
 
 def make_score(unit_id: str = "p1", dim: str = "humanness") -> JudgeScore:

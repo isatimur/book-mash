@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from book_mash.judges.models import JudgeLabel, JudgeScore
+from mash_core import JudgeLabel, JudgeScore
 
 
 def weighted_mean(values: Sequence[float | None], weights: Sequence[int]) -> float | None:
