@@ -31,7 +31,7 @@ from mash_core import JudgeDim, JudgeInput, JudgeLabel, JudgeScore
 
 # Lowered from 8 to reduce Anthropic rate-limit failures that left prior runs
 # partial (humanness + claim_defensibility under-covered). As of the retry layer
-# (judges/_retry.py), transient 429/529s are retried with backoff rather than
+# (mash_core.retry), transient 429/529s are retried with backoff rather than
 # turned into permanent coverage gaps, so this is now a throughput knob, not a
 # coverage one — raise if your tier allows.
 # Throughput knob, not a coverage one (the retry layer recovers transient 429s).
@@ -56,7 +56,7 @@ _HEAVY_JUDGES = frozenset({"humanness", "claim_defensibility"})
 _HEAVY_CONCURRENCY = int(os.environ.get("BOOK_MASH_HEAVY_CONCURRENCY", "1"))
 
 # Hard per-unit wall-clock cap. Belt-and-suspenders on top of the per-request
-# httpx timeout (judges/_model_settings.py, 120s) and run_with_backoff's bounded
+# httpx timeout (mash_core.model_settings, 120s) and run_with_backoff's bounded
 # retries. The per-request timeout only bounds a single in-flight HTTP request; it
 # cannot catch a unit that wedges with NOTHING in flight (a code-level asyncio
 # stall: 0 CPU, 0 network connections). That failure mode is dangerous here because

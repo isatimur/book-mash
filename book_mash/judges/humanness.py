@@ -55,7 +55,7 @@ Even a "strong" score must name the weakest moment.
 
 
 def _build_agent() -> tuple[Agent[None, _HumannessOutput], str]:
-    # Model is now provider-configurable via _model_factory (Anthropic default,
+    # Model is now provider-configurable via mash_core.model_factory (Anthropic default,
     # OpenRouter/OpenAI-compatible opt-in). The factory returns the model object
     # AND the stable model-id string that flows into the cache key + JudgeScore.model.
     # pydantic-ai 0.0.40: system_prompt= (not instructions=); result_type= is correct;

@@ -48,7 +48,7 @@ List the specific overlapping arguments and which earlier chapters they overlap 
 
 
 def _build_agent() -> tuple[Agent[None, _RedundancyOutput], str]:
-    # Model is provider-configurable via _model_factory (Anthropic default,
+    # Model is provider-configurable via mash_core.model_factory (Anthropic default,
     # OpenRouter/OpenAI-compatible opt-in). Factory returns the model object AND
     # the stable model-id string that flows into the cache key + JudgeScore.model.
     model, model_id = build_judge_model()

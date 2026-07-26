@@ -184,7 +184,7 @@ book-mash/
     config.py                 # book-mash.toml loader
     init.py                   # interactive wizard for book-mash.toml
     corpus/                   # Chapter→Section→Paragraph markdown parser
-    judges/                   # six judge implementations + base class + pricing
+    judges/                   # six judge implementations (base class, pricing, model factory/retry live in the mash_core package)
     runners/
       measurement.py          # the v0.1 pipeline (260 lines)
       planner.py              # dry-run cost estimator (no LLM calls)

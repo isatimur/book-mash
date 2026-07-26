@@ -35,6 +35,8 @@ Required env: `ANTHROPIC_API_KEY`. Optional: `OPENAI_API_KEY` — enables embedd
 
 The engine scores a manuscript in a single pipeline pass (`run_measurement`) and writes three output layers: a JSON ledger, a Markdown report, and per-chapter annotation sidecars.
 
+book-mash depends on `mash_core`, a sibling package that holds the provider-agnostic judge contract (`JudgeDim`, `JudgeScore`, `JudgeInput`), the model factory, retry/backoff, and pricing logic; it's currently a local path dependency (`../mash-core` in `pyproject.toml`) since it isn't published anywhere yet.
+
 ### Data flow
 
 ```
@@ -62,7 +64,7 @@ Key: `sha256(unit_text + optional_ctx_key) | dim_name | dim_version | model_id`.
 
 ### Judge pattern
 
-Each judge in `judges/` extends `JudgeDim` (ABC) and declares `name`, `unit_type`, `model_id` as `ClassVar`. `judge(input: JudgeInput) -> JudgeScore` is the only required method. `context_cache_key()` is overridden when the judge's score depends on context beyond the unit text (e.g. a mutable claims ledger), so cache misses on ledger changes are correct.
+`JudgeDim` (ABC), `JudgeScore`, and `JudgeInput` live in the `mash_core` package, not in `book_mash/judges/` — import them from `mash_core`. Each judge in `judges/` subclasses `JudgeDim` and declares `name`, `unit_type`, `model_id` as `ClassVar`. `judge(input: JudgeInput) -> JudgeScore` is the only required method. `context_cache_key()` is overridden when the judge's score depends on context beyond the unit text (e.g. a mutable claims ledger), so cache misses on ledger changes are correct.
 
 ### Adding a new judge
 
@@ -73,9 +75,9 @@ Each judge in `judges/` extends `JudgeDim` (ABC) and declares `name`, `unit_type
 
 ### Key models
 
-- `JudgeScore` — the atomic unit of all output. Fields: `dim_name`, `unit_id`, `score_0_100` (None on error), `label` (strong/moderate/weak/fail/error), `reasoning`, `evidence_refs`, `model`, `cost_usd`, `derived`.
-- `JudgeInput` — what a judge receives: `unit_id`, `unit_type`, `unit_text`, `dim_name`, `context` dict.
-- `Run` — top-level result: version stamps, `total_cost_usd`, `status` (completed / halted_budget), `rollups` dict, and the full `scores` list.
+- `JudgeScore` — the atomic unit of all output. A `mash_core` type, re-exported and used throughout book-mash. Fields: `dim_name`, `unit_id`, `score_0_100` (None on error), `label` (strong/moderate/weak/fail/error), `reasoning`, `evidence_refs`, `model`, `cost_usd`, `derived`.
+- `JudgeInput` — what a judge receives, also a `mash_core` type: `unit_id`, `unit_type`, `unit_text`, `dim_name`, `context` dict.
+- `Run` — top-level result, defined in book-mash: version stamps, `total_cost_usd`, `status` (completed / halted_budget), `rollups` dict, and the full `scores` list.
 
 ### Test conventions
 
