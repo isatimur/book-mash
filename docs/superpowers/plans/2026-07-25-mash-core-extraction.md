@@ -1686,7 +1686,7 @@ Expected: exactly one hit — `book_mash/judges/base.py` importing `book_mash/ju
 poetry run pytest
 ```
 
-Expected: fully green — same pass count as baseline (87 passed / 3 deselected). This is the point of pulling the test-file edits into this task: the suite must not regress mid-task.
+Expected: fully green, 0 failures — 84 passed / 3 deselected. (Not 87: Steps 21-22 delete the 3 tests that moved to mash-core in Task 1, so 87 baseline minus 3 moved = 84. The point of pulling the test-file edits into this task is 0 *failures*, not an unchanged count.)
 
 ```bash
 git add book_mash/ tests/
