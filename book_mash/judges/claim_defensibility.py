@@ -33,7 +33,7 @@ class _ClaimDefensibilityOutput(BaseModel):
 # invalidated WITHOUT disturbing any other dimension's cache. It is folded into
 # this judge's context_cache_key (which is part of the per-unit cache hash), so
 # the bump is scoped to claim_defensibility only.
-CLAIM_DEFENSIBILITY_PROMPT_VERSION = "2"
+CLAIM_DEFENSIBILITY_PROMPT_VERSION = "3"
 
 
 _SYSTEM_PROMPT = """\
@@ -46,7 +46,28 @@ You receive:
   (strong / moderate / weak), the claim statement, and its supporting quotes and
   sources (verbatim quotes from named speakers/sources backing the claim).
 
-For each claim made in the prose:
+Step 0 — decide whether the paragraph makes an externally-checkable claim at all.
+A paragraph needs no ledger backing, and is not a candidate for "unsupported" or
+"fail", if it is:
+- a rhetorical question, posed to the reader rather than asserted as fact
+- transitional/connective prose (chapter bridges, "that is the subject of this
+  book", scene-setting, "the chapters that follow...")
+- an authorial scoping statement about what the book/chapter covers or why
+  (e.g. "this chapter keeps X as the primary case")
+- a restatement or synthesis of the book's OWN already-established argument
+  (the thesis it built earlier, not a new fact about the external world)
+- a definitional statement about a term the book itself defines (e.g. "taste
+  means X here", "constraints do several jobs at once" followed by the book's
+  own list)
+Score these paragraphs in the strong band (90-100) with reasoning noting
+"no externally-checkable claim — connective/definitional/synthesis prose."
+Do not flag them as unsupported or fail: there is nothing for a ledger to back,
+because the paragraph is not asserting a fact about the world that a reader
+could reasonably ask "says who?" about.
+
+For paragraphs that DO make an externally-checkable claim (a fact, statistic,
+named practice, or generalization about how things work, teams, or systems
+behave), evaluate it against the ledger:
 - match it to a ledger entry using BOTH the claim statement AND its supporting
   quotes/sources. Prose may echo a supporting quote (e.g. "bless one platform",
   "root of trust") rather than the claim statement's wording — treat a match
@@ -57,14 +78,17 @@ For each claim made in the prose:
 - prose with no matching ledger entry (statement or supporting quote) = unsupported
 
 Rubric:
-- strong (80-100): all claims at or below ledger strength
+- strong (80-100): no externally-checkable claim, OR all claims at or below ledger strength
 - moderate (50-79): slight overstatement on a minor claim
 - weak (20-49): central claim overstates ledger evidence
-- fail (0-19): the paragraph makes a claim with no ledger backing at all
+- fail (0-19): the paragraph makes an externally-checkable claim with no ledger backing at all
 
-The `fail` label is a ship-blocker. Use it whenever there is a fabricated or unsupported claim
-of any kind. Before flagging a claim as unsupported, confirm it is backed by
-neither a claim statement nor any supporting quote in the provided ledger entries.
+The `fail` label is a ship-blocker. Use it ONLY for a fabricated or unsupported
+claim about the external world — never for rhetorical, transitional, scoping,
+or synthesis prose (see Step 0). Before flagging a claim as unsupported, confirm
+(a) it is actually a claim about the world, not connective prose, and (b) it is
+backed by neither a claim statement nor any supporting quote in the provided
+ledger entries.
 
 Report all overstated and unsupported claims explicitly.
 """
