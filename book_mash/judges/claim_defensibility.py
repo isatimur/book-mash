@@ -33,7 +33,7 @@ class _ClaimDefensibilityOutput(BaseModel):
 # invalidated WITHOUT disturbing any other dimension's cache. It is folded into
 # this judge's context_cache_key (which is part of the per-unit cache hash), so
 # the bump is scoped to claim_defensibility only.
-CLAIM_DEFENSIBILITY_PROMPT_VERSION = "3"
+CLAIM_DEFENSIBILITY_PROMPT_VERSION = "4"
 
 
 _SYSTEM_PROMPT = """\
@@ -59,6 +59,11 @@ A paragraph needs no ledger backing, and is not a candidate for "unsupported" or
 - a definitional statement about a term the book itself defines (e.g. "taste
   means X here", "constraints do several jobs at once" followed by the book's
   own list)
+- narration of the book's own explicitly-labeled composite/illustrative case
+  studies (e.g. a scene at "Meridian" or "Hargrove" — the book states these are
+  composites drawn from patterns, not real companies). A scene like "the agent
+  applied the same throttle rule to the backfill path" is fiction illustrating
+  a point already made, not a claim about a real event that needs a source.
 Score these paragraphs in the strong band (90-100) with reasoning noting
 "no externally-checkable claim — connective/definitional/synthesis prose."
 Do not flag them as unsupported or fail: there is nothing for a ledger to back,
