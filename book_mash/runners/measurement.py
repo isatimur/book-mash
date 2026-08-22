@@ -10,7 +10,10 @@ from book_mash.corpus.claim_retrieval import retrieve_relevant_claims
 from book_mash.corpus.claims_index import load_claims_index
 from book_mash.corpus.loader import compute_snapshot_hash, load_chapters
 from book_mash.corpus.models import Chapter
-from book_mash.judges.claim_defensibility import ClaimDefensibilityJudge
+from book_mash.judges.claim_defensibility import (
+    CLAIM_DEFENSIBILITY_PROMPT_VERSION,
+    ClaimDefensibilityJudge,
+)
 from book_mash.judges.embeddings import pick_embedding_client
 from book_mash.judges.evidence_density import EvidenceDensityJudge
 from book_mash.judges.humanness import HumannessJudge
@@ -273,6 +276,7 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
         corpus_snapshot_hash=snapshot_hash,
         book_mash_version=__version__,
         dim_registry_version=DIM_REGISTRY_VERSION,
+        judge_prompt_versions={"claim_defensibility": CLAIM_DEFENSIBILITY_PROMPT_VERSION},
         started_at=started,
         finished_at=finished,
         total_cost_usd=round(cost, 4),

@@ -11,6 +11,7 @@ def write_ledger(run: Run, run_dir: Path) -> None:
         "corpus_snapshot_hash": run.corpus_snapshot_hash,
         "book_mash_version": run.book_mash_version,
         "dim_registry_version": run.dim_registry_version,
+        "judge_prompt_versions": run.judge_prompt_versions,
         "started_at": run.started_at,
         "finished_at": run.finished_at,
         "total_cost_usd": run.total_cost_usd,
