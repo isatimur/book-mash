@@ -51,8 +51,8 @@ def _load_chapter(file_path: str, skip_sections: set[str] | None = None) -> Chap
             return
         start = current_para_start or 1
         end = start + len(current_para_lines) - 1
-        is_bq = all(_BLOCKQUOTE.match(l) for l in current_para_lines if l.strip())
-        is_cf = any(_CODE_FENCE.match(l) for l in current_para_lines)
+        is_bq = all(_BLOCKQUOTE.match(ln) for ln in current_para_lines if ln.strip())
+        is_cf = any(_CODE_FENCE.match(ln) for ln in current_para_lines)
         para_id = f"paragraph:{chapter_id}#L{start}-L{end}"
         current_section["paragraphs"].append(Paragraph(
             id=para_id,

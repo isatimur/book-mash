@@ -1,4 +1,4 @@
-from book_mash.corpus.models import Paragraph, Section, Chapter, Corpus
+from book_mash.corpus.models import Paragraph, Section, Chapter
 from book_mash.runners.models import Run, RunStatus
 
 

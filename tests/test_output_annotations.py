@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from book_mash.corpus.models import Chapter, Paragraph, Section
 from mash_core import JudgeLabel, JudgeScore
 from book_mash.output.annotations import write_annotations

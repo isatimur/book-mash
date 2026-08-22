@@ -1,4 +1,3 @@
-from book_mash.corpus.models import ClaimEntry
 from book_mash.judges.evidence_density import _label_for_density
 
 

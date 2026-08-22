@@ -1,6 +1,7 @@
 import pytest
 
 from book_mash.judges.humanness import HumannessJudge
+from book_mash.judges.voice import VoiceJudge
 from mash_core import JudgeInput, JudgeLabel
 
 
@@ -40,9 +41,6 @@ async def test_humanness_passes_specific_prose():
     score = await judge.judge(input)
     assert score.label in (JudgeLabel.MODERATE, JudgeLabel.STRONG)
     assert score.evidence_refs  # worst_phrase is required even on a strong score
-
-
-from book_mash.judges.voice import VoiceJudge
 
 
 @pytest.mark.live

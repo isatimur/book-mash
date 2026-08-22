@@ -56,7 +56,13 @@ book-mash.toml
 
 ### Concurrency model (`runners/measurement.py`)
 
-Two semaphores: `_CONCURRENCY=3` for all judges, `_HEAVY_CONCURRENCY=1` for humanness + claim_defensibility (large prompts that blow the TPM rate limit). Heavy judges hold both semaphores; light judges hold only the global one — no deadlock risk.
+Two semaphores, both env-tunable:
+- `_CONCURRENCY` — global in-flight judge calls. Default `3` (`BOOK_MASH_CONCURRENCY`).
+- `_HEAVY_CONCURRENCY` — caps humanness + claim_defensibility, the large-prompt
+  judges that blow the Anthropic TPM rate limit. Default `1`
+  (`BOOK_MASH_HEAVY_CONCURRENCY`). Heavy judges hold both semaphores; light
+  judges hold only the global one — no deadlock risk. Raise both for providers
+  with generous TPM limits (e.g. OpenRouter/DeepSeek).
 
 ### Cache (`cache.py`)
 
@@ -64,7 +70,7 @@ Key: `sha256(unit_text + optional_ctx_key) | dim_name | dim_version | model_id`.
 
 ### Judge pattern
 
-`JudgeDim` (ABC), `JudgeScore`, and `JudgeInput` live in the `mash_core` package, not in `book_mash/judges/` — import them from `mash_core`. Each judge in `judges/` subclasses `JudgeDim` and declares `name`, `unit_type`, `model_id` as `ClassVar`. `judge(input: JudgeInput) -> JudgeScore` is the only required method. `context_cache_key()` is overridden when the judge's score depends on context beyond the unit text (e.g. a mutable claims ledger), so cache misses on ledger changes are correct.
+`JudgeDim` (ABC), `JudgeScore`, and `JudgeInput` live in the `mash_core` package, not in `book_mash/judges/` — import them from `mash_core`. Each judge in `judges/` subclasses `JudgeDim` and declares `name` and `unit_type` as `ClassVar`s; `model_id` starts as a `ClassVar` fallback (`DEFAULT_JUDGE_MODEL_ID`) and is replaced at `__init__` time by the live value returned from `mash_core.build_judge_model()`. `judge(input: JudgeInput) -> JudgeScore` is the only required method. `context_cache_key()` is overridden when the judge's score depends on context beyond the unit text (e.g. a mutable claims ledger), so cache misses on ledger changes are correct.
 
 ### Adding a new judge
 

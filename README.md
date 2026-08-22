@@ -54,7 +54,7 @@ book-mash measure --config ./book-mash.toml
 
 (If you installed via Poetry instead of pip, prefix each command with `poetry run --directory ~/Dev/LifeOS/book-mash`.)
 
-A full v0.1 run on a 10-chapter / 80k-word manuscript: **~$3–6** in Anthropic credits, **3–5 min** wall clock with default 8-way concurrency.
+A full v0.1 run on a 10-chapter / 80k-word manuscript: **~$3–6** in Anthropic credits, **3–5 min** wall clock with the default 3-way concurrency (`BOOK_MASH_CONCURRENCY=3`; raise it for providers with generous TPM limits, e.g. OpenRouter).
 
 ---
 
@@ -80,14 +80,33 @@ All paths are resolved relative to the location of the toml file. Required keys:
 
 ## The six judges
 
-| # | Dimension | Granularity | Model | What it scores |
-|---|---|---|---|---|
-| 1 | **humanness** | paragraph | Sonnet | Anti-AI-slop. Does this read like a thinking author, or generic AI-flavoured hedging? `reasoning` must quote the worst phrase. |
-| 2 | **voice** | chapter (broadcast to sections/paragraphs as `derived=true`) | Sonnet | Does this chapter sound like the same author as the baseline chapters? Names specific drift ("longer sentences than baseline", "softer epistemic stance"). |
-| 3 | **usefulness** | paragraph | Haiku | Could a practitioner change something on Monday because of this paragraph? Filler and meta-talk are `fail`. |
-| 4 | **evidence_density** | section | Haiku + deterministic match | Grounded claims per ~500 words, ratio against `claims_dir`. Number is reproducible — Haiku lists candidates, code computes the ratio. |
-| 5 | **claim_defensibility** | paragraph (claim-bearing only) | Sonnet | For each claim the prose makes, does it match what the claims ledger actually supports? `fail` here is a ship-blocker. |
-| 6 | **redundancy** | chapter (broadcast down) | Haiku + embeddings | Does this chapter restate arguments already made earlier? Cosine-similarity prefilter narrows pairs before Haiku confirms. |
+| # | Dimension | Granularity | What it scores |
+|---|---|---|---|
+| 1 | **humanness** | paragraph | Anti-AI-slop. Does this read like a thinking author, or generic AI-flavoured hedging? `reasoning` must quote the worst phrase. |
+| 2 | **voice** | chapter (broadcast to sections/paragraphs as `derived=true`) | Does this chapter sound like the same author as the baseline chapters? Names specific drift ("longer sentences than baseline", "softer epistemic stance"). |
+| 3 | **usefulness** | paragraph | Could a practitioner change something on Monday because of this paragraph? Filler and meta-talk are `fail`. |
+| 4 | **evidence_density** | section | Grounded claims per ~500 words, ratio against `claims_dir`. Number is reproducible — the LLM lists candidates, code computes the ratio. |
+| 5 | **claim_defensibility** | paragraph (claim-bearing only) | For each claim the prose makes, does it match what the claims ledger actually supports? `fail` here is a ship-blocker. |
+| 6 | **redundancy** | chapter (broadcast down) | Does this chapter restate arguments already made earlier? Cosine-similarity prefilter narrows pairs before the LLM confirms. |
+
+### Model routing
+
+Every judge gets its model from `mash_core.build_judge_model()`, a single factory
+configured by environment variables:
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `BOOK_MASH_JUDGE_PROVIDER` | `anthropic` | `anthropic` · `openrouter` · `openai-compatible` |
+| `BOOK_MASH_JUDGE_MODEL` | `claude-sonnet-4-6` | Model id (OpenRouter slug for `openrouter`) |
+| `BOOK_MASH_JUDGE_BASE_URL` | `https://openrouter.ai/api/v1` | Override for any OpenAI-compatible gateway |
+| `BOOK_MASH_JUDGE_API_KEY_ENV` | `OPENROUTER_API_KEY` | Name of the env var holding the API key |
+
+With no env vars set, all six judges run on Anthropic Sonnet (`claude-sonnet-4-6`)
+— byte-for-byte compatible with prior runs and cache keys. Switching provider
+prefixes the cache-key id (`openrouter:…`, `openai-compatible:…`) so a provider
+change always busts the cache; no stale cross-provider scores are ever reused.
+This also lets you judge Claude-written prose with a non-Claude model to avoid
+self-preference bias. See [`mash-core`](https://github.com/isatimur/mash-core).
 
 All judges: `temperature=0`, structured output, version-stamped on every run. Re-running on an unchanged corpus with a warm cache produces identical scores. Cold-cache reruns are approximately reproducible.
 
@@ -186,11 +205,11 @@ book-mash/
     corpus/                   # Chapter→Section→Paragraph markdown parser
     judges/                   # six judge implementations (base class, pricing, model factory/retry live in the mash_core package)
     runners/
-      measurement.py          # the v0.1 pipeline (260 lines)
+      measurement.py          # the v0.1 pipeline (343 lines)
       planner.py              # dry-run cost estimator (no LLM calls)
       models.py               # Run / RunStatus types
     output/                   # ledger, report, annotations renderers
-  tests/                      # ~10 test files: config, models, judges, rollups, output
+  tests/                      # 18 test files: config, models, judges, rollups, output, claim retrieval, planner, concurrency
   scripts/                    # repo-local utilities
 ```
 

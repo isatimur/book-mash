@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # book-mash depends on mash-core via a path dependency (../mash-core in
+      # pyproject.toml). Check out mash-core one level up so that path resolves
+      # exactly as it does in the local dev layout (LifeOS/mash-core sibling).
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: isatimur/mash-core
+          path: ../mash-core
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Configure poetry
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Lint (ruff)
+        run: poetry run ruff check .
+
+      - name: Type check (mypy)
+        run: poetry run mypy book_mash
+
+      - name: Tests (pytest, excluding live LLM calls)
+        run: poetry run pytest -v -m "not live"

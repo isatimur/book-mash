@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 from book_mash.output.ledger import write_ledger
 from book_mash.runners.models import Run, RunStatus

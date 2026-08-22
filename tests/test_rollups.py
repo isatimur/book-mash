@@ -1,5 +1,5 @@
 from mash_core import JudgeLabel, JudgeScore
-from book_mash.rollups import weighted_mean, rollup_paragraph_to_section, rollup_section_to_chapter
+from book_mash.rollups import weighted_mean, rollup_paragraph_to_section
 
 
 def s(dim: str, score: float | None, char_count: int = 100, unit_id: str = "p") -> JudgeScore:
