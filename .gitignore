@@ -9,3 +9,4 @@ build/
 .venv/
 .book-mash-runs/
 .worktrees/
+.DS_Store
