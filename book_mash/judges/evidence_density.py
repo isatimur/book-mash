@@ -5,6 +5,7 @@ from pydantic_ai import Agent
 from book_mash.corpus.models import ClaimEntry
 from book_mash.judges.registry import register_dim
 from mash_core import (
+    audited_agent_run,
     DEFAULT_JUDGE_MODEL_ID,
     JUDGE_MODEL_SETTINGS,
     JudgeDim,
@@ -13,7 +14,6 @@ from mash_core import (
     JudgeScore,
     build_judge_model,
     estimate_cost,
-    run_with_backoff,
 )
 
 
@@ -95,7 +95,7 @@ class EvidenceDensityJudge(JudgeDim):
             f"Section prose:\n{input.unit_text}"
         )
         try:
-            result = await run_with_backoff(lambda: self._agent.run(prompt))
+            result = await audited_agent_run(self._agent, prompt, model_id=self.model_id)
             out: _EvidenceDensityOutput = result.data
             grounded = [c for c in out.candidate_claims if c.closest_ledger_id]
             ungrounded = [c for c in out.candidate_claims if not c.closest_ledger_id]

@@ -20,7 +20,23 @@ class OpenAIEmbeddingClient:
             model="text-embedding-3-small",
             input=texts,
         )
-        return [d.embedding for d in result.data]
+        vectors = [d.embedding for d in result.data]
+        # Audit this outbound OpenAI call. The payload is chapter text (a real
+        # PII surface); the response is vectors, so we log a shape descriptor
+        # rather than the numbers. record_call is fail-open and never raises.
+        from mash_core import record_call
+
+        usage = getattr(result, "usage", None)
+        record_call(
+            prompt="\n".join(texts),
+            response=f"[embeddings: {len(vectors)} vectors, dim {len(vectors[0]) if vectors else 0}]",
+            model_id="openai:text-embedding-3-small",
+            tokens_in=getattr(usage, "total_tokens", None),
+            tokens_out=0,
+            provider="openai",
+            caller="book_mash.judges.embeddings.OpenAIEmbeddingClient.embed",
+        )
+        return vectors
 
 
 def pick_embedding_client() -> EmbeddingClient:

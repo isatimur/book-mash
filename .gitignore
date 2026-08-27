@@ -10,3 +10,10 @@ build/
 .book-mash-runs/
 .worktrees/
 .DS_Store
+
+# Cloud-LLM-call audit wrapper logs (contract 2026-08-27). Never track these:
+# they hold logged prompt/response bodies and PII-flag records.
+logs/llm-call-audit.jsonl
+logs/llm-call-pii-flags.jsonl
+logs/llm-call-coverage-gaps.jsonl
+logs/.llm-call-marker.json

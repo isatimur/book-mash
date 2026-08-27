@@ -5,6 +5,7 @@ from pydantic_ai import Agent
 
 from book_mash.judges.registry import register_dim
 from mash_core import (
+    audited_agent_run,
     DEFAULT_JUDGE_MODEL_ID,
     JUDGE_MODEL_SETTINGS,
     JudgeDim,
@@ -13,7 +14,6 @@ from mash_core import (
     JudgeScore,
     build_judge_model,
     estimate_cost,
-    run_with_backoff,
 )
 
 
@@ -80,7 +80,7 @@ class VoiceJudge(JudgeDim):
         baseline = input.context.get("voice_baseline_excerpts", [])
         prompt = _format_prompt(input.unit_text, baseline)
         try:
-            result = await run_with_backoff(lambda: self._agent.run(prompt))
+            result = await audited_agent_run(self._agent, prompt, model_id=self.model_id)
             out: _VoiceOutput = result.data
             usage = result.usage()
             cost = estimate_cost(self.model_id, usage.request_tokens, usage.response_tokens)

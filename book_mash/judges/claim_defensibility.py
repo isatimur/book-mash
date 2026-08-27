@@ -8,6 +8,7 @@ from pydantic_ai import Agent
 from book_mash.corpus.models import ClaimEntry
 from book_mash.judges.registry import register_dim
 from mash_core import (
+    audited_agent_run,
     DEFAULT_JUDGE_MODEL_ID,
     JUDGE_MODEL_SETTINGS,
     JudgeDim,
@@ -16,7 +17,6 @@ from mash_core import (
     JudgeScore,
     build_judge_model,
     estimate_cost,
-    run_with_backoff,
 )
 
 
@@ -175,7 +175,7 @@ class ClaimDefensibilityJudge(JudgeDim):
         ledger: list[ClaimEntry] = input.context.get("relevant_ledger", [])
         prompt = build_prompt(input.unit_text, ledger)
         try:
-            result = await run_with_backoff(lambda: self._agent.run(prompt))
+            result = await audited_agent_run(self._agent, prompt, model_id=self.model_id)
             out: _ClaimDefensibilityOutput = result.data
             usage = result.usage()
             cost = estimate_cost(self.model_id, usage.request_tokens, usage.response_tokens)

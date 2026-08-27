@@ -5,6 +5,7 @@ from pydantic_ai import Agent
 
 from book_mash.judges.registry import register_dim
 from mash_core import (
+    audited_agent_run,
     DEFAULT_JUDGE_MODEL_ID,
     JUDGE_MODEL_SETTINGS,
     JudgeDim,
@@ -13,7 +14,6 @@ from mash_core import (
     JudgeScore,
     build_judge_model,
     estimate_cost,
-    run_with_backoff,
 )
 
 
@@ -88,7 +88,7 @@ class HumannessJudge(JudgeDim):
         surrounding = input.context.get("surrounding_paragraphs", [])
         user_prompt = _format_user_prompt(input.unit_text, surrounding)
         try:
-            result = await run_with_backoff(lambda: self._agent.run(user_prompt))
+            result = await audited_agent_run(self._agent, user_prompt, model_id=self.model_id)
             out: _HumannessOutput = result.data
             # pydantic-ai 0.0.40 Usage: request_tokens / response_tokens (not input_/output_tokens)
             usage = result.usage()
