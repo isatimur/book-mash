@@ -15,9 +15,20 @@ _CHAPTER_NUM = re.compile(r"[Cc]hapter\s+(\d+)")
 
 
 def load_chapters(chapters_glob: str, skip_sections: list[str] | None = None) -> list[Chapter]:
+    """Chapters in narrative order.
+
+    Sorted by parsed chapter `number`, NOT by filename. Lexicographic path order
+    puts "Chapter 10" second (1, 10, 2, 3, ...), which silently corrupts every
+    order-dependent judgement: `redundancy` compares each chapter against the
+    ones "already seen", so chapter 10 was scored against chapter 1 alone while
+    chapters 2-9 were each scored against chapter 10 — a chapter downstream of
+    them in the real book. Files with no parseable number keep number 0 and sort
+    first, ties broken by path so the order stays deterministic.
+    """
     paths = sorted(glob.glob(chapters_glob))
     skip = set(skip_sections or [])
-    return [_load_chapter(p, skip) for p in paths]
+    chapters = [_load_chapter(p, skip) for p in paths]
+    return sorted(chapters, key=lambda c: (c.number, c.file_path))
 
 
 def _slug(s: str) -> str:
