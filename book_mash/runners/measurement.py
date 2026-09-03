@@ -327,7 +327,12 @@ def _load_voice_baseline(chapters: list[Chapter], baseline_files: list[str]) -> 
 
 
 def _make_run_id(snapshot_hash: str) -> str:
-    timestamp = datetime.now(UTC).strftime("%Y-%m-%d-%H%M%S")
+    # Millisecond precision: two judges launched in the same second used to get the
+    # SAME run_id and the second one silently overwrote the first's scores.json
+    # (2026-09-03, three panel members started concurrently). Nothing parses the
+    # timestamp; the trailing -<snap4> is what tooling keys on.
+    now = datetime.now(UTC)
+    timestamp = now.strftime("%Y-%m-%d-%H%M%S") + f"{now.microsecond // 1000:03d}"
     short = snapshot_hash.split(":")[1][:4]
     return f"{timestamp}-{short}"
 

@@ -272,3 +272,11 @@ async def test_cache_hit_reports_current_unit_id_after_lines_shift(tmp_path, moc
     # Sanity: the shifted paragraphs were served from cache under their new ids, so run2
     # has at least as many paragraph ids as run1.
     assert len(reported) >= len({s.unit_id for s in run1.scores if s.unit_id.startswith("paragraph:") and not s.derived})
+
+
+def test_run_ids_do_not_collide_within_one_second():
+    """Three panel judges launched in the same second must not share a run directory."""
+    from book_mash.runners.measurement import _make_run_id
+    ids = {_make_run_id("sha256:abcdef0123") for _ in range(50)}
+    assert len(ids) > 1, "run ids must carry sub-second precision"
+    assert all(i.endswith("-abcd") for i in ids)
