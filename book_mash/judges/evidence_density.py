@@ -1,4 +1,7 @@
 
+import hashlib
+import json
+
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
@@ -86,6 +89,16 @@ class EvidenceDensityJudge(JudgeDim):
 
     def __init__(self):
         self._agent, self.model_id = _build_agent()
+
+    def context_cache_key(self, input: JudgeInput) -> str:
+        # The score is a function of the section text AND the ledger it is matched
+        # against. Without the ledger in the key, a ledger change never invalidates a
+        # cached section score: on 2026-09-03 fourteen new entries written to rescue
+        # ten zero-claim sections were never seen by the judge, because every one of
+        # those sections replayed its previous score from the cache.
+        claims_index: list[ClaimEntry] = input.context.get("claims_index", [])
+        serialized = json.dumps([{"id": c.id, "text": c.text} for c in claims_index], sort_keys=True)
+        return hashlib.sha256(serialized.encode()).hexdigest()
 
     async def judge(self, input: JudgeInput) -> JudgeScore:
         claims_index: list[ClaimEntry] = input.context.get("claims_index", [])
