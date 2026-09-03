@@ -126,6 +126,13 @@ async def run_measurement(cfg: BookMashConfig) -> Run:
         unit_hash = content_hash(input.unit_text + "|ctx:" + ctx_key) if ctx_key else content_hash(input.unit_text)
         cached = cache.get(unit_hash, judge.name, DIM_REGISTRY_VERSION, judge.model_id)
         if cached is not None:
+            # The cache is keyed by CONTENT, not position. A paragraph whose text is
+            # unchanged but whose line numbers moved (edits above it) hits the cache and
+            # must be reported under its CURRENT unit_id, or panel_merge cannot align
+            # members that have different cache coverage (2026-09-03: 263-334 stale ids
+            # per member, 97 units with <2 votes).
+            if cached.unit_id != input.unit_id:
+                return cached.model_copy(update={"unit_id": input.unit_id})
             return cached
         async with _slots(judge.name):
             if cost >= cfg.max_cost_usd:

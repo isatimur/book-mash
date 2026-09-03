@@ -235,3 +235,40 @@ async def test_heavy_judges_serialize_under_their_own_semaphore(tmp_path, mock_e
     # overlap — so the peak being within the cap is a real constraint, not a vacuous one.
     assert state["heavy_total"] > _HEAVY_CONCURRENCY
     assert state["heavy_peak"] <= _HEAVY_CONCURRENCY
+
+
+async def test_cache_hit_reports_current_unit_id_after_lines_shift(tmp_path, mock_all_judges, mock_embeddings):
+    """The cache is keyed by paragraph CONTENT. When text above a paragraph changes, the
+    paragraph keeps its cache entry but its line-numbered unit_id moves. The cached score
+    must be reported under the CURRENT id, or panel_merge cannot align members with
+    different cache coverage (2026-09-03: 263-334 stale ids per member run)."""
+    import shutil
+    from book_mash.corpus.loader import load_chapters
+
+    book = tmp_path / "mini_book"
+    shutil.copytree(FIXTURE_CONFIG.parent, book)
+    cfg = load_config(str(book / "book-mash.toml"))
+    cfg.runs_dir = str(tmp_path / "runs")
+
+    run1 = await run_measurement(cfg)
+    calls_after_run1 = mock_all_judges["count"]
+
+    # Prepend a new paragraph to chapter 2: every existing paragraph below it keeps its
+    # text (cache hit) but its line numbers shift.
+    ch2 = book / "public" / "drafting" / "chapter-02.md"
+    lines = ch2.read_text().splitlines()
+    first_body = next(i for i, line in enumerate(lines) if line.strip() and not line.startswith("#"))
+    lines[first_body:first_body] = ["A brand new opening paragraph that shifts everything below it.", ""]
+    ch2.write_text("\n".join(lines) + "\n")
+
+    run2 = await run_measurement(cfg)
+    current_ids = {p.id for c in load_chapters(cfg.chapters_glob, cfg.skip_sections)
+                   for s in c.sections for p in s.paragraphs}
+    reported = {s.unit_id for s in run2.scores if s.unit_id.startswith("paragraph:") and not s.derived}
+    stale = reported - current_ids
+    assert not stale, f"cached scores reported under stale unit_ids: {sorted(stale)[:5]}"
+    # And the cache was actually used: far fewer judge calls than a cold run.
+    assert mock_all_judges["count"] - calls_after_run1 < calls_after_run1 // 2
+    # Sanity: the shifted paragraphs were served from cache under their new ids, so run2
+    # has at least as many paragraph ids as run1.
+    assert len(reported) >= len({s.unit_id for s in run1.scores if s.unit_id.startswith("paragraph:") and not s.derived})
