@@ -34,8 +34,9 @@ def test_cache_key_changes_when_ledger_changes():
         judge = EvidenceDensityJudge()
     def entry(i, text):
         return ClaimEntry(id=f"claims#{i}", text=text, support_level="moderate", file_path="ledger.md")
-    mk = lambda ledger: JudgeInput(unit_id="section:x#y", unit_type="section", unit_text="same text",
-                                   dim_name="evidence_density", context={"claims_index": ledger})
+    def mk(ledger):
+        return JudgeInput(unit_id="section:x#y", unit_type="section", unit_text="same text",
+                          dim_name="evidence_density", context={"claims_index": ledger})
     k1 = judge.context_cache_key(mk([entry(1, "a")]))
     k2 = judge.context_cache_key(mk([entry(1, "a"), entry(2, "new claim")]))
     k3 = judge.context_cache_key(mk([entry(1, "a")]))
