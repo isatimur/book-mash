@@ -46,3 +46,50 @@ def test_cache_persists_across_instances(tmp_path):
     cache2 = JudgeScoreCache(path)
     got = cache2.get(unit_hash="h1", dim_name="humanness", dim_version="0.1.0", model_id="m")
     assert got is not None
+
+
+def test_concurrent_runs_do_not_erase_each_other(tmp_path):
+    """Regression, 2026-09-09: the panel runs its three members in parallel. The member
+    that started first also finished last, and its flush wrote back a dict loaded before
+    the others had cached anything — erasing their entries silently. The erased model
+    then re-bought 416 judgements on its next run and ran out of credit mid-flight."""
+    path = tmp_path / "cache.json"
+    first = JudgeScoreCache(path)   # starts 00:05, flushes 00:24
+    second = JudgeScoreCache(path)  # starts 00:05, flushes 00:07
+    third = JudgeScoreCache(path)   # starts 00:14, flushes 00:16
+
+    first.put(unit_hash="h", dim_name="humanness", dim_version="0.1.0", model_id="deepseek", score=make_score())
+    second.put(unit_hash="h", dim_name="humanness", dim_version="0.1.0", model_id="llama", score=make_score())
+    third.put(unit_hash="h", dim_name="humanness", dim_version="0.1.0", model_id="qwen", score=make_score())
+
+    second.flush()
+    third.flush()
+    first.flush()  # last writer must not discard the other two
+
+    reloaded = JudgeScoreCache(path)
+    for model in ("deepseek", "llama", "qwen"):
+        assert reloaded.get(
+            unit_hash="h", dim_name="humanness", dim_version="0.1.0", model_id=model
+        ) is not None, f"{model}'s entry was erased by a later flush"
+
+
+def test_flush_is_atomic_and_leaves_no_tmp_file(tmp_path):
+    """The merge writes through a same-directory temp file. It must be renamed into
+    place, never left behind: the runs directory is scanned by the publish scripts."""
+    path = tmp_path / "cache.json"
+    cache = JudgeScoreCache(path)
+    cache.put(unit_hash="h1", dim_name="humanness", dim_version="0.1.0", model_id="m", score=make_score())
+    cache.flush()
+    assert path.exists()
+    assert list(tmp_path.glob("*.tmp")) == []
+
+
+def test_corrupt_cache_on_disk_is_rebuilt_not_fatal(tmp_path):
+    """A half-written cache from an older build must not fail the run."""
+    path = tmp_path / "cache.json"
+    path.write_text('{"truncated": ')
+    cache = JudgeScoreCache(path)  # tolerated on read? if not, this is the contract we want
+    cache.put(unit_hash="h1", dim_name="humanness", dim_version="0.1.0", model_id="m", score=make_score())
+    cache.flush()
+    reloaded = JudgeScoreCache(path)
+    assert reloaded.get(unit_hash="h1", dim_name="humanness", dim_version="0.1.0", model_id="m") is not None
