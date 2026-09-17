@@ -15,23 +15,42 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: book-mash
     steps:
       # book-mash depends on mash-core via a path dependency (../mash-core in
-      # pyproject.toml). Check out mash-core one level up so that path resolves
-      # exactly as it does in the local dev layout (LifeOS/mash-core sibling).
+      # pyproject.toml), so the two repos must end up as siblings.
+      #
+      # `path: ../mash-core` does NOT work: actions/checkout refuses any path
+      # outside $GITHUB_WORKSPACE and fails with "Repository path
+      # '/home/runner/work/book-mash/mash-core' is not under
+      # '/home/runner/work/book-mash/book-mash'". That broke every run from
+      # 2026-09-03 to 2026-09-17 while the suite passed locally.
+      #
+      # Instead, check BOTH repos into sibling subdirectories of the workspace
+      # and run from book-mash/. That reproduces the local LifeOS layout exactly
+      # and keeps every path inside the workspace.
       - uses: actions/checkout@v4
+        with:
+          path: book-mash
 
       - uses: actions/checkout@v4
         with:
           repository: isatimur/mash-core
-          path: ../mash-core
+          path: mash-core
 
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      # Pin to the version that generated poetry.lock. `pipx install poetry`
+      # installs the latest (2.4.3), which computes the pyproject content hash
+      # differently from 1.8.3 and fails with "pyproject.toml changed
+      # significantly since poetry.lock was last generated" on a lock that is
+      # in fact correct. That broke mash-core CI on every run from 2026-08-25.
       - name: Install poetry
-        run: pipx install poetry
+        run: pipx install poetry==1.8.3
 
       - name: Configure poetry
         run: poetry config virtualenvs.in-project true
